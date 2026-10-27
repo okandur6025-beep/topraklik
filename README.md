@@ -8,5 +8,5 @@ topraklik.com kaynak kodu.
 - `logo/` — logo dosyaları
 
 `main` dalına yapılan her değişiklik GitHub Actions ile otomatik yayınlanır (`.github/workflows/deploy.yml`).
-Gerekli GitHub secret'ları: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+Gerekli GitHub secret: `CLOUDFLARE_API_TOKEN`.
 Gizli anahtarlar (ADMIN_KEY, API token) bu depoya konmaz.
