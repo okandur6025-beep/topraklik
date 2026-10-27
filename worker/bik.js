@@ -24,12 +24,16 @@ export function bikCevir(a, kat, IL_AD, slugify) {
     if (m) { ilce = m[1].trim(); m2 = num(m[2].replace(/\./g, "")); nitelik = m[3].trim(); }
   }
   if (!m2) { const mm = title.match(/([\d.]+)\s*m²/); if (mm) m2 = num(mm[1].replace(/\./g, "")); }
+  let mahalle = null;
+  const mk = ilce.match(/^(\S+)\s+(.+?(?:Köyü|Mahallesi|Mah\.|Beldesi|Mevkii))$/i);
+  if (mk) { ilce = mk[1]; mahalle = mk[2]; }
+  ilce = buyuk(ilce);
   if (!ilce) ilce = a.addressCountyName && a.addressCountyName !== "Merkez" ? a.addressCountyName : "Merkez";
   let cins = kat;
   if (kat === "Tarla") cins = /zeytin/i.test(nitelik) ? "Zeytinlik" : /bağ|bahçe/i.test(nitelik) ? "Bağ-Bahçe" : "Tarla";
   const tarih = tarihISO(f["Birinci Satış Günü"]);
   return {
-    id: "bik" + a.id, ilan_id: String(a.id), il, il_slug, ilce, mahalle: null, ada: null, parsel: null, cins, imar: null, m2,
+    id: "bik" + a.id, ilan_id: String(a.id), il, il_slug, ilce, mahalle, ada: null, parsel: null, cins, imar: null, m2,
     bedel: num(f["Muhammen Bedeli"]), teminat: null, tarih, bitis: tarih ? gunEkle(tarih, 7) : null,
     yer: a.advertiserName, usul: /mahkeme/i.test(title) ? "Mahkeme kararıyla satış (ortaklığın giderilmesi vb.)" : "İcra yoluyla satış (2004 sayılı İİK)",
     hisse: null, amac: null, tasinmaz_no: a.adNo, link: "https://www.ilan.gov.tr" + a.urlStr, foto: 0, nitelik: buyuk(nitelik) || null, dosya: f["Dosya No"] || null, baslik: title,
