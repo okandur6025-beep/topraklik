@@ -16,6 +16,8 @@ import { SATIS_TURU_SQL } from "./ihale.js";
 import { ziyaretKaydet, olayKaydet, sayfaMi, OLAY_JS } from "./analiz.js";
 import { panel } from "./panel.js";
 import { anaSayfa } from "./anasayfa.js";
+import { ilceVeri, emsalTablo, ilceOzet, ilceSss } from "./ilceseo.js";
+import { kart as ihaleKarti } from "./ihale.js";
 import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
 import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS, tekrarAyikla, benzerMi } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
@@ -382,21 +384,38 @@ async function ilcePage(env, ilSlug, ilceSlug) {
   if (!il) return null;
   const ilce = await env.DB.prepare("SELECT * FROM geo_ilce WHERE il_id = ?1 AND slug = ?2").bind(il.id, ilceSlug).first();
   if (!ilce) return null;
-  const mahs = ((await env.DB.prepare("SELECT ad, lat, lng FROM geo_mahalle WHERE ilce_id = ?1").bind(ilce.id).all()).results || []).sort(trSort);
-  const c = await env.DB.prepare("SELECT * FROM pages WHERE section = 'ilce' AND slug = ?1 AND status = 'published'").bind(`${ilSlug}-${ilceSlug}`).first();
-  const news = await newsAbout(env, [ilce.ad]);
+  const [mahsR, c, news, v, uretim, ilUr] = await Promise.all([
+    env.DB.prepare("SELECT ad, lat, lng FROM geo_mahalle WHERE ilce_id = ?1").bind(ilce.id).all(),
+    env.DB.prepare("SELECT * FROM pages WHERE section = 'ilce' AND slug = ?1 AND status = 'published'").bind(`${ilSlug}-${ilceSlug}`).first(),
+    newsAbout(env, [ilce.ad]),
+    ilceVeri(env, ilSlug, ilceSlug),
+    ilceUrunleri(env, ilSlug, ilceSlug),
+    ilUrunleri(env, ilSlug),
+  ]);
+  const mahs = (mahsR.results || []).sort(trSort);
+  const ps = (m) => `/parsel-sorgu?il=${ilSlug}&ilce=${ilceSlug}${m ? "&mahalle=" + slugify(m) : ""}`;
+  const sss = ilceSss(v, ilce.ad, il.ad, uretim);
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/il">İller</a> › <a href="/il/${ilSlug}">${esc(il.ad)}</a> › ${esc(ilce.ad)}</div>
-<div class="layout"><article><h1>${esc(c?.h1 || `${ilce.ad} (${il.ad}) mahalleleri, köyleri ve arazileri`)}</h1>${c?.answer ? `<p class="answer">${esc(c.answer)}</p>` : ""}
-<p class="note">${esc(ilce.ad)}, ${esc(il.ad)}: ${mahs.length ? mahs.length + " mahalle ve köy" : "mahalle listesi yükleniyor"}. ${ilce.lat ? `<a href="${mapLink(ilce.lat, ilce.lng, 11)}" target="_blank" rel="noopener">Haritada gör</a>` : ""}</p>
+<div class="layout"><article><h1>${esc(c?.h1 || `${ilce.ad} (${il.ad}): satılık tarla ve arsalar, arazi değerleri, ne ekilir`)}</h1>
+${ilceOzet(v, ilce.ad, il.ad, uretim, esc)}${c?.answer ? `<p>${esc(c.answer)}</p>` : ""}
+<p class="ih-dugmeler"><a class="btn dolu" href="/ihaleler/${ilSlug}/${ilceSlug}">${esc(ilce.ad)} ihaleleri${v.sayi.toplam ? ` (${v.sayi.toplam})` : ""}</a> <a class="btn ih-3b" href="${ps()}">${esc(ilce.ad)} ilçesinde parsel sorgula</a></p>
+${v.ihaleler.length ? `<h2>${esc(ilce.ad)} ilçesindeki güncel ihaleler</h2><div class="ilist">${v.ihaleler.map((x) => ihaleKarti(x, esc)).join("")}</div>${v.sayi.toplam > v.ihaleler.length ? `<p><a href="/ihaleler/${ilSlug}/${ilceSlug}">Tüm ${esc(ilce.ad)} ihalelerini gör (${v.sayi.toplam}) →</a></p>` : ""}` : ""}
+${emsalTablo(v, ilce.ad, il.ad, esc)}
 ${c ? c.body_html : ""}
-${ilceUrunHtml(await ilceUrunleri(env, ilSlug, ilceSlug), ilce.ad, esc)}
-${urunListHtml(await ilUrunleri(env, ilSlug), `${ilce.ad} ve ${il.ad} çevresinde yetişen ürünler`)}
+${ilceUrunHtml(uretim, ilce.ad, esc)}
+${urunListHtml(ilUr, `${ilce.ad} ve ${il.ad} çevresinde yetişen ürünler`)}
 <p class="note">Ürün seçimi ilçe içinde de rakım, sulama ve toprağa göre değişir; kesin karar için toprak analizi yaptırın ve ilçe tarım müdürlüğüne danışın.</p>
-<h2>${esc(ilce.ad)} mahalle ve köyleri</h2>${mahs.length ? `<ul style="columns:3 180px;padding-left:18px">${mahs.map((m) => `<li>${esc(m.ad)}</li>`).join("")}</ul>` : `<p>Liste yükleniyor.</p>`}
-<p>Bu ilçedeki bir parseli sorgulamak için <a href="/#harita">3B parsel sorgu</a> aracına ada ve parsel numarasını girin. ${esc(il.ad)} geneli tarım bilgileri için <a href="/il/${ilSlug}">${esc(il.ad)} sayfasına</a> bakın.</p>
-<div class="src">İdari bölünme: Tapu ve Kadastro Genel Müdürlüğü</div></article>
-<aside>${await ihaleKutusu(env, { il: ilSlug, ilce: ilceSlug }, esc) || await ihaleKutusu(env, { il: ilSlug }, esc)}<h3>${esc(ilce.ad)} ve ${esc(il.ad)} haberleri</h3>${newsList(news.length ? news : await newsAbout(env, [il.ad], 5))}</aside></div>`;
-  return html(page({ title: `${ilce.ad} (${il.ad}) mahalleleri, köyleri ve tarla ihaleleri · Topraklık`, description: `${il.ad} ${ilce.ad} ilçesinin ${mahs.length || ""} mahalle ve köyü, haritası, tarım bilgileri ve arazi ihaleleri.`, path: `/il/${ilSlug}/${ilceSlug}`, body, current: "/il" }), 200, 1800);
+<h2>${esc(ilce.ad)} mahalle ve köyleri</h2>${mahs.length ? `<p>${mahs.length} mahalle ve köy. Bir mahalleye dokunarak o mahallede ada ve parselle sorgu yapabilirsiniz.</p><ul style="columns:3 180px;padding-left:18px">${mahs.map((m) => `<li><a href="${ps(m.ad)}" rel="nofollow">${esc(m.ad)}</a></li>`).join("")}</ul>` : `<p>Mahalle listesi hazırlanıyor. Bu sırada <a href="${ps()}">parsel sorgu aracından</a> ilçedeki mahalleleri seçebilirsiniz.</p>`}
+<h2>Sık sorulan sorular</h2>${sss.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}
+${v.digerleri.length ? `<h2>${esc(il.ad)} ilindeki diğer ilçeler</h2><p class="chips">${v.digerleri.map((d) => `<a class="tag" href="/il/${ilSlug}/${esc(d.ilce_slug)}">${esc(d.ilce)} · ${d.n} ihale</a>`).join(" ")}</p>` : ""}
+<p>${esc(il.ad)} geneli tarım bilgileri için <a href="/il/${ilSlug}">${esc(il.ad)} sayfasına</a>, tüm ilanlar için <a href="/ihaleler/${ilSlug}">${esc(il.ad)} ihalelerine</a> bakın.</p>
+<div class="src">Kaynaklar: idari bölünme TKGM; ihaleler UYAP e-Satış, ilan.gov.tr ve Milli Emlak; üretim TÜİK. Sayfa her gün güncellenir.</div></article>
+<aside>${await ihaleKutusu(env, { il: ilSlug }, esc)}<h3>${esc(ilce.ad)} ve ${esc(il.ad)} haberleri</h3>${newsList(news.length ? news : await newsAbout(env, [il.ad], 5))}</aside></div>`;
+  const jsonld = [{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: sss.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [["Ana sayfa", "/"], ["İller", "/il"], [il.ad, `/il/${ilSlug}`], [ilce.ad, `/il/${ilSlug}/${ilceSlug}`]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: SITE + u })) }];
+  const t = v.emsal.find((e) => e.cins === "Tarla");
+  const desc = `${il.ad} ${ilce.ad}: ${v.sayi.toplam ? `${v.sayi.toplam} güncel icra ve hazine arazi ihalesi` : "icra ve hazine arazi ihaleleri"}${t ? `, tarla m² değeri ortanca ${Math.round(t.med).toLocaleString("tr-TR")} TL` : ""}, ilçede ne ekildiği (TÜİK), ${mahs.length ? mahs.length + " mahalle ve köy, " : ""}3B parsel sorgu.`;
+  return html(page({ title: `${ilce.ad} satılık tarla, arsa ve arazi değerleri (${il.ad}) · Topraklık`, description: desc, path: `/il/${ilSlug}/${ilceSlug}`, body, current: "/il", jsonld }), 200, 1800);
 }
 
 const xmlYanit = (x) => new Response(x, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600", "x-tk": "1" } });
@@ -420,8 +439,8 @@ async function sitemap(env, bolum) {
     const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
     const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
     urls = ils.map((i) => [`/il/${i.slug}`, today, "0.7"]);
-    const ilces = (await env.DB.prepare("SELECT il_id, slug FROM geo_ilce WHERE mah_done = 1").all()).results || [];
-    urls.push(...ilces.map((x) => [`/il/${ilSlug[x.il_id]}/${x.slug}`, today, "0.5"]));
+    const ilces = (await env.DB.prepare("SELECT il_id, slug FROM geo_ilce").all()).results || [];
+    urls.push(...ilces.filter((x) => ilSlug[x.il_id]).map((x) => [`/il/${ilSlug[x.il_id]}/${x.slug}`, today, "0.6"]));
   } else return null;
   return xmlYanit(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([p, d, pr]) => `  <url><loc>${SITE}${p}</loc><lastmod>${d}</lastmod><priority>${pr}</priority></url>`).join("\n")}\n</urlset>`);
 }

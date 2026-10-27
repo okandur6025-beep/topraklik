@@ -178,7 +178,7 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/ihaleler">İhaleler</a>${ilAd ? ` › <a href="/ihaleler/${esc(f.il)}">${esc(ilAd)}</a>` : ""}${ilceAd ? ` › ${esc(ilceAd)}` : ""}</div>
 <h1>${esc(h1)}</h1>
 <p class="lead">İcra ve mahkeme satışlarındaki tarla, arsa, ev ve işyerleri (UYAP e-Satış ve ilan.gov.tr) ile Milli Emlak'ın hazine satış ve kiralama ihaleleri her gün güncellenir. Bedel, alan, hisse, KDV ve artırma tarihleri ilanın tam metninden okunur. Her ilan kaynağına bağlıdır; teklif vermeden önce ilanın aslını ve şartnamesini mutlaka kontrol edin.</p>
-${yer && (topS + topK + topI) ? `<p><b>${esc(yer)}</b> için şu an <b>${nf(topI)}</b> icra ve mahkeme satışı, <b>${nf(topS)}</b> hazine satış ve <b>${nf(topK)}</b> hazine kiralama ilanı var. İlanlar her gün kaynağından kontrol edilir.</p>` : ""}
+${ilceAd ? `<p><a href="/il/${esc(f.il)}/${esc(f.ilce)}">${esc(ilceAd)} hakkında: arazi değerleri, ne ekilir, mahalleler →</a></p>` : ""}${yer && (topS + topK + topI) ? `<p><b>${esc(yer)}</b> için şu an <b>${nf(topI)}</b> icra ve mahkeme satışı, <b>${nf(topS)}</b> hazine satış ve <b>${nf(topK)}</b> hazine kiralama ilanı var. İlanlar her gün kaynağından kontrol edilir.</p>` : ""}
 <div class="ozet"><span>İcra / mahkeme <b>${nf(topI)}</b></span><span>Hazine satış <b>${nf(topS)}</b></span><span>Hazine kiralama <b>${nf(topK)}</b></span></div>
 ${form}
 ${rows.length ? `<div class="ilist">${rows.map((x) => kart(x, esc)).join("")}</div>` : `<p class="note">${opts.length ? "Bu filtreye uygun güncel ilan yok. Filtreleri genişletin." : "İlanlar ilk kez yükleniyor; kısa süre içinde burada olacak."}</p>`}

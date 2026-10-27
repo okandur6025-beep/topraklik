@@ -104,7 +104,7 @@ export function parselSorgu({ esc, page, html }) {
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Parsel sorgulama</div>
 <div class="layout"><article><h1>Parsel sorgulama: ada ve parsel ile tarla nasıl bulunur?</h1>
 <p class="answer">Bir arsanın veya tarlanın yerini, sınırlarını ve alanını <b>il, ilçe, mahalle, ada ve parsel</b> numarasıyla sorgulayabilirsiniz. Topraklık'ın 3B parsel aracı parseli uydu görüntüsü üzerinde gösterir, yakınındaki ihaleleri ve bölgede ne ekildiğini birlikte sunar.</p>
-<p><a class="btn dolu" href="/#harita">3B parsel sorgu aracını aç</a> <a class="btn" href="https://parselsorgu.tkgm.gov.tr" target="_blank" rel="noopener">TKGM Parsel Sorgu</a></p>
+<p><a class="btn dolu" href="/parsel-sorgu">3B parsel sorgu aracını aç</a> <a class="btn" href="https://parselsorgu.tkgm.gov.tr" target="_blank" rel="noopener">TKGM Parsel Sorgu</a></p>
 <h2>Adım adım parsel sorgulama</h2><ol><li>Tapudaki il, ilçe ve mahalle (köy) adını seçin.</li><li>Tapu senedindeki <b>ada</b> ve <b>parsel</b> numarasını yazın.</li><li>Sonuçta parselin sınırı, yüzölçümü ve niteliği (tarla, arsa, bağ vb.) görünür.</li><li>Topraklık aracında parseli 3B görünümde inceleyebilir, aynı bölgedeki ihale ve satış fiyatlarıyla karşılaştırabilirsiniz.</li></ol>
 <h2>Ada ve parsel numarası nerede yazar?</h2><p>Tapu senedinin ön yüzünde "Ada" ve "Parsel" başlıklarıyla yazar. e-Devlet'te "Tapu Bilgileri Sorgulama" hizmetinden de kendi taşınmazlarınızın ada ve parsel numarasını görebilirsiniz.</p>
 <h2>Parsel sorgunun sınırları</h2><p>Parsel sorgu sonuçları bilgi amaçlıdır; resmî belge yerine geçmez. İmar durumu için belediyeden, tapu kaydı ve şerhler için tapu müdürlüğünden bilgi alınmalıdır.</p>
