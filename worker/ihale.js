@@ -223,7 +223,7 @@ ${gecti ? `<p class="note"><b>Bu ihalenin tarihi geçti veya ilan yayından kalk
 <table><tbody>
 ${satir("İlan türü", esc(`${KAYNAK[x.kaynak]?.tur || ""} ${TIP[x.tip] || ""}`))}
 ${satir("Satış türü", esc(SATIS_TURU[x.satis_turu] || ""))}
-${satir("Konum", esc(`${x.il} / ${x.ilce} / ${x.mahalle || ""}`))}
+${satir("Konum", esc([x.il, x.ilce, mahAd].filter(Boolean).join(" / ")))}
 ${satir("Ada / parsel", esc(`${x.ada} / ${x.parsel}`))}
 ${satir("Cinsi", esc(x.cins))}
 ${satir(h ? "Toplam yüzölçümü" : "Yüzölçümü", x.m2 ? `${nf(x.m2)} m²${dekar(x.m2)}` : "")}
@@ -231,7 +231,7 @@ ${h ? satir("Satılan hisse", `${esc(x.hisse)} · ${nf(sm)} m²`) : ""}
 ${satir(x.tip === "kira" ? "Yıllık kira bedeli" : "Muhammen (tahmini) bedel", x.bedel ? tl(x.bedel) : "")}
 ${satir(h ? "Hissenin m² fiyatı" : "m² fiyatı", birim ? nf(birim) + " TL" : "")}
 ${satir("KDV", x.kdv != null ? (x.kdv ? `%${x.kdv}` : "Yok") : "")}
-${satir("Geçici teminat", x.teminat ? tl(x.teminat) : "")}
+${satir(icra ? "Teminat (kıymetin %10'u)" : "Geçici teminat", x.teminat ? tl(x.teminat) : "")}
 ${tk ? `${satir("1. artırma", tk.a1 ? esc(aralik(tk.a1)) + " · " + esc(tk.a1.bas.slice(11, 16)) : "")}${satir("2. artırma", tk.a2 ? esc(aralik(tk.a2)) + " · " + esc(tk.a2.bas.slice(11, 16)) : "")}` : satir(icra ? "1. satış günü" : "İhale tarihi", esc(trTarih(x.tarih)))}
 ${satir("Şu anki durum", `<b>${esc(as.metin)}</b>`)}
 ${satir("Nitelik", esc(x.nitelik))}
@@ -239,7 +239,7 @@ ${satir("Dosya no", esc(x.dosya))}
 ${satir(icra ? "Satışı yapan" : "İhalenin yapılacağı yer", esc(x.yer))}
 ${satir("İhale usulü", esc(x.usul))}
 ${satir("İmar durumu", esc(x.imar))}
-${satir("Hazine hissesi", esc(x.hisse))}
+${x.kaynak === "milliemlak" ? satir("Hazine hissesi", esc(x.hisse)) : ""}
 ${satir("Kiralama amacı", esc(x.amac))}
 ${satir(icra ? "İlan no" : "Taşınmaz no", esc(x.tasinmaz_no))}
 </tbody></table>

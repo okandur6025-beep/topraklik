@@ -216,7 +216,7 @@ export function haberKart(n, { esc, ago, CATS }) {
   return `<article class="hb-kart" style="--k:${kk(n).k}"><a href="${esc(ic(n))}"${dis(n)} tabindex="-1" aria-hidden="true">${haberGorsel(n)}</a>
 <div class="hb-ust"><span class="hb-kicker">${esc(CATS[n.category] || "Gündem")}</span><span class="hb-zaman">${esc(ago(n.published_at))}</span></div>
 <h3><a href="${esc(ic(n))}"${dis(n)}>${esc(n.title)}</a></h3>${n.ozet ? `<p class="hb-ozet">${esc(n.ozet)}</p>` : ""}${onemHtml(n, esc)}
-<div class="hb-alt"><span>${esc(n.source)}</span>${n.ozet ? `<a href="/haberler/${esc(n.id)}">Devamı →</a>` : `<a href="${esc(n.url)}" target="_blank" rel="noopener nofollow">Kaynakta oku ↗</a>`}</div></article>`;
+<div class="hb-alt"><span>${esc(n.source)}${n.digerKaynak ? ` ve ${n.digerKaynak.length} kaynak daha` : ""}</span>${n.ozet ? `<a href="/haberler/${esc(n.id)}">Devamı →</a>` : `<a href="${esc(n.url)}" target="_blank" rel="noopener nofollow">Kaynakta oku ↗</a>`}</div></article>`;
 }
 
 function yanKart(n, { esc, ago, CATS }) {
@@ -307,4 +307,35 @@ ${linkler.length ? `<h2>Topraklık'ta ilgili</h2><div class="hb-ilgili">${linkle
 <aside><h3>Aynı konudan</h3>${benzer.map((b) => `<a class="hb-aside-kart" href="/haberler/${esc(b.id)}" style="--k:${kk(b).k}">${haberGorsel(b)}<span><b>${esc(b.title)}</b><small>${esc(b.source)} · ${esc(ago(b.published_at))}</small></span></a>`).join("") || `<a class="card" href="/haberler"><b>Tüm haberler →</b></a>`}<a class="card" href="/ihaleler"><b>Güncel ihaleler →</b></a></aside></div>`;
   const jsonld = { "@context": "https://schema.org", "@type": "NewsArticle", headline: n.title.slice(0, 110), datePublished: n.published_at, inLanguage: "tr", description: n.ozet, isBasedOn: n.url, author: { "@type": "Organization", name: "Topraklık" }, publisher: { "@type": "Organization", name: "Topraklık", url: SITE } };
   return html(page({ title: `${n.title} · Topraklık Haber Bülteni`, description: n.ozet.slice(0, 160), path: `/haberler/${id}`, body, current: "/haberler", jsonld, noindex: !n.alakali }), 200, 3600);
+}
+
+/* ---------- Tekrar eden haberler ---------- */
+const GENEL = new Set(["için", "olarak", "ile", "daha", "kadar", "sonra", "önce", "büyük", "yeni", "oldu", "olan", "geldi", "açıkl", "haber", "devam", "ediyo", "bekle", "belli", "nasıl", "neler", "kimle", "tarla", "arsa", "icrad", "icra", "satış", "satıl", "çıkar", "çıktı", "ihale", "ilanı", "fiyat", "fırsa", "hibe", "deste", "milyo", "çiftç", "üreti", "tarım", "rekol", "hasat", "sezon", "yüzde", "dönüm", "metre", "zaman", "günde", "yüksek", "yükse", "dikka", "sağla", "sahib", "isten", "başla", "verdi", "gerek", "yapıl", "edile", "toplam", "bin", "ton", "kilo", "lira", "adet", "metrekare"].map((w) => w.slice(0, 4)));
+const IL_SET = new Set(Object.values(IL_AD).map((a) => trk(a)));
+function kokler(t) {
+  return [...new Set(String(t || "").toLocaleLowerCase("tr").replace(/[’'`´][a-zçğıöşü]*/g, " ").replace(/[^a-zçğıöşü ]/g, " ").split(/\s+/).filter((w) => w.length >= 3).map((w) => w.slice(0, 4)).filter((w) => !GENEL.has(w)))];
+}
+function iller(t) { const s = new Set(); for (const w of String(t || "").toLocaleLowerCase("tr").replace(/[’'`´][a-zçğıöşü]*/g, " ").split(/[^a-zçğıöşü]+/)) if (IL_SET.has(w)) s.add(w); return s; }
+export function benzerMi(a, b) {
+  const ia = iller(a), ib = iller(b);
+  if (ia.size && ib.size && ![...ia].some((x) => ib.has(x))) return false;
+  const A = kokler(a), B = new Set(kokler(b));
+  const ortak = A.filter((w) => B.has(w)).length;
+  return ortak >= 2 && ortak / Math.min(A.length, B.size || 1) >= 0.5;
+}
+/* Aynı olayın kopyalarını birleştir: özetli olan öne geçer, diğer kaynaklar karta not edilir */
+export function tekrarAyikla(rows) {
+  const n = rows.length, ata = rows.map((_, i) => i);
+  const bul = (i) => (ata[i] === i ? i : (ata[i] = bul(ata[i])));
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (benzerMi(rows[i].title, rows[j].title)) ata[bul(j)] = bul(i);
+  const grup = new Map();
+  rows.forEach((r, i) => { const k = bul(i); (grup.get(k) || grup.set(k, []).get(k)).push(r); });
+  const ana = new Set();
+  for (const g of grup.values()) {
+    const sec = g.find((r) => r.ozet) || g[0];
+    sec.digerKaynak = g.filter((r) => r !== sec).map((r) => r.source);
+    if (!sec.digerKaynak.length) delete sec.digerKaynak;
+    ana.add(sec);
+  }
+  return rows.filter((r) => ana.has(r));
 }

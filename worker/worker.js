@@ -16,7 +16,7 @@ import { SATIS_TURU_SQL } from "./ihale.js";
 import { ziyaretKaydet, olayKaydet, sayfaMi, OLAY_JS } from "./analiz.js";
 import { panel } from "./panel.js";
 import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
-import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS } from "./haber.js";
+import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS, tekrarAyikla, benzerMi } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
@@ -87,6 +87,8 @@ const fnv = (t) => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h 
 async function collectNews(env, slot = 0, perRun = 2) {
   const log = [];
   const now = new Date().toISOString();
+  let son = [];
+  try { son = ((await env.DB.prepare("SELECT title FROM news WHERE published_at > ?1 ORDER BY published_at DESC LIMIT 500").bind(new Date(Date.now() - 4 * 864e5).toISOString()).all()).results || []).map((r) => r.title); } catch (e) {}
   for (let k = 0; k < perRun; k++) {
     const f = FEEDS[(slot * perRun + k) % FEEDS.length];
     try {
@@ -94,7 +96,7 @@ async function collectNews(env, slot = 0, perRun = 2) {
       const tag = f.name || f.url.replace(/^https:\/\/(www\.)?/, "").slice(0, 40);
       if (!r.ok) { log.push(`${tag}: HTTP ${r.status}`); continue; }
       const xml = await r.text();
-      const items = parseRss(xml.slice(0, 120000)).filter((it) => !f.filter || AGRI.test(it.title)).slice(0, 20).map((it) => (f.name && it.source === "Kaynak" ? { ...it, source: f.name } : it));
+      const items = parseRss(xml.slice(0, 120000)).filter((it) => !f.filter || AGRI.test(it.title)).slice(0, 20).map((it) => (f.name && it.source === "Kaynak" ? { ...it, source: f.name } : it)).filter((it) => { if (son.some((t) => t === it.title || benzerMi(t, it.title))) return false; son.push(it.title); return true; });
       let added = 0;
       for (let i = 0; i < items.length; i += 12) {
         const chunk = items.slice(i, i + 12);
@@ -272,6 +274,7 @@ async function newsPage(env, url) {
   }
   const tabs = `<nav class="tabs" aria-label="Kategoriler"><a href="/haberler"${!cat ? ' aria-current="page"' : ""}>Tümü</a>${Object.entries(CATS).map(([k, v]) => `<a href="/haberler?kategori=${k}"${cat === k ? ' aria-current="page"' : ""}>${v}</a>`).join("")}</nav>`;
   const more = rows.length === 40 ? `<p><a href="/haberler?${cat ? `kategori=${cat}&` : ""}sayfa=${p + 1}">Daha eski haberler →</a></p>` : "";
+  rows = tekrarAyikla(rows);
   const ctx = { esc, ago, CATS, cat };
   const govde = !rows.length ? (dbHata ? `<p class="note">Haberler şu anda güncelleniyor, lütfen biraz sonra tekrar bakın.</p>` : newsList([])) : bulten(rows, ctx);
   const body = `${rows.filter((n) => n._h || n.model).map((n) => `<!-- hata: ${esc(String(n._h || "model " + n.model))} -->`).join("")}<div class="crumb"><a href="/">Ana sayfa</a> › Haber Bülteni</div>${bultenUst({ esc, CATS, cat, tabs })}${govde}${more}`;
@@ -446,7 +449,8 @@ function tickerHtml(items) {
 function newsBoxHtml(rows) {
   if (!rows.length) return "";
   const ctx = { esc, ago, CATS };
-  const sec = [...rows.filter((n) => n.ozet), ...rows.filter((n) => !n.ozet)].slice(0, 3);
+  const t = tekrarAyikla(rows);
+  const sec = [...t.filter((n) => n.ozet), ...t.filter((n) => !n.ozet)].slice(0, 3);
   return `<section class="tk-news" id="haberler-kutu"><div class="wrap"><div class="sec-head"><div><h2 class="sec-title">Topraklık Haber Bülteni</h2><p class="sec-sub">Günün tarım, hibe, fiyat ve arazi haberleri; kısa özet ve sizin için neden önemli olduğu</p></div><a class="btn btn-line" href="/haberler">Tüm haberler →</a></div>
 <div class="hb-grid">${sec.map((n) => haberKart(n, ctx)).join("")}</div></div></section>`;
 }
@@ -527,7 +531,7 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
     try {
-      if (path === "/api/haberler") { try { return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
+      if (path === "/api/haberler") { try { return Response.json(tekrarAyikla(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 40 })).slice(0, 30), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/api/olay" && req.method === "POST") return olayKaydet(req, env);
       if (path === "/okan" || path === "/okan/plan") return panel(req, env, url, { page, onay: await yetkili(req, env) });
