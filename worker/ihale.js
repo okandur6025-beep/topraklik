@@ -106,7 +106,7 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
     if (+f.min_m2) add("m2 >= ?", +f.min_m2);
     const ord = { tarih: "tarih ASC", ucuz: "bedel ASC", buyuk: "m2 DESC", m2fiyat: "bedel / m2 ASC", yeni: "ilk_gorulme DESC" }[f.sira] || "tarih ASC";
     rows = (await env.DB.prepare(`SELECT * FROM ihale WHERE ${w.join(" AND ")} ORDER BY ${ord} LIMIT ${N + 1} OFFSET ${(sayfa - 1) * N}`).bind(...b).all()).results || [];
-  } catch (e) { /* tablo henüz yok */ }
+  } catch (e) { var dbHata = true; }
   const more = rows.length > N; rows = rows.slice(0, N);
   const ils = {}, ilces = {}, cinsler = {};
   let topS = 0, topK = 0, topI = 0;
@@ -139,7 +139,7 @@ ${rows.length ? `<div class="ilist">${rows.map((x) => kart(x, esc)).join("")}</d
 <div class="sayfa">${sayfa > 1 ? `<a class="btn" href="${esc(qs(sayfa - 1))}">← Önceki</a>` : ""}${more ? `<a class="btn" href="${esc(qs(sayfa + 1))}">Sonraki →</a>` : ""}</div>
 <p class="note">İcra ihaleleri UYAP e-Satış üzerinden e-Devlet ile girilerek yapılır. Katılmayı öğrenmek için <a href="/rehber/icra-ihalesine-nasil-girilir">icra ihalesi rehberine</a>, hazine arazisi almak için <a href="/rehber/hazine-arazisi-nasil-alinir">hazine arazisi rehberine</a> bakın.</p>`;
   const desc = yer ? `${yer} icradan satılık tarla ve arsalar ile Milli Emlak hazine arazi satış ve kiralama ihaleleri: muhammen bedel, satış tarihi, ada parsel.` : "Türkiye genelinde icradan ve mahkemeden satılık tarla ve arsalar ile hazine (Milli Emlak) arazi satış ve kiralama ihaleleri; il ve ilçeye göre arama.";
-  return html(page({ title: `${h1} · Topraklık`, description: desc, path: pathBase, body, current: "/ihaleler" }), 200, 900);
+  return html(page({ title: `${h1} · Topraklık`, description: desc, path: pathBase, body, current: "/ihaleler" }), 200, 900, typeof dbHata !== "undefined");
 }
 
 export async function ihaleDetay(env, id, ctx) {
