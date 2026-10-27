@@ -57,7 +57,7 @@ main.tam{max-width:none;padding:0}
 .as-sayilar .as-wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
 .as-sayi{padding:20px 16px;border-left:1px solid var(--line)}.as-sayi:first-child{border-left:0}
 .as-sayi b{display:block;font-family:"Playfair Display",Georgia,serif;font-size:clamp(24px,3vw,32px);color:var(--green);line-height:1.1}
-.as-sayi span{font-size:13.5px;color:var(--muted)}
+.as-sayi span{display:block;font-size:13.5px;line-height:1.4;color:var(--muted);margin-top:4px}
 .as-bolum{padding:clamp(44px,6vw,72px) 0}
 .as-bolum.acik{background:#FFFDF8;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .as-bas{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin:0 0 22px}
@@ -90,19 +90,19 @@ main.tam{max-width:none;padding:0}
 .as-dogru{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--green);background:var(--gsoft);border-radius:999px;padding:5px 11px}.as-dogru svg{width:15px;height:15px}
 .as-araclar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .as-arac{display:block;background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;text-decoration:none;color:var(--ink)}
-.as-arac:hover{border-color:var(--gold2)}.as-arac b{display:block;font-size:16px;margin-bottom:4px}.as-arac span{font-size:13.5px;color:var(--muted);line-height:1.45}
+.as-arac:hover{border-color:var(--gold2)}.as-arac b{display:block;font-size:16px;margin-bottom:4px}.as-arac span{display:block;font-size:13.5px;color:var(--muted);line-height:1.45}
 .as-rehber{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .as-rehber a{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--ink);font-weight:700;font-size:15px;line-height:1.35}
 .as-rehber a svg{width:18px;height:18px;flex:none;color:var(--green)}
 .as-kaynak{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-.as-kaynak div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.as-kaynak b{display:block;font-size:15px}.as-kaynak span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.as-kaynak div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.as-kaynak b{display:block;font-size:15px}.as-kaynak span{display:block;font-size:12.5px;color:var(--muted);line-height:1.4;margin-top:3px}
 .as-sss{max-width:820px}.as-sss details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin:0 0 10px}
 .as-sss summary{font-weight:800;cursor:pointer;font-size:16px}.as-sss p{margin:10px 0 0;color:var(--muted);line-height:1.6}
 .as-son{background:var(--green);color:#F3EEE2}.as-son .as-wrap{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding-top:36px;padding-bottom:36px}
 .as-son h2{margin:0;font-family:"Playfair Display",Georgia,serif;color:#fff;font-size:clamp(24px,3vw,32px)}.as-son p{margin:6px 0 0;opacity:.85}
 .as-son .as-btn{background:#E9C46A;color:#26261E}
-@media (max-width:980px){.as-hero .as-wrap{grid-template-columns:1fr}.as-uclu,.as-ihaleler{grid-template-columns:1fr 1fr}.as-araclar{grid-template-columns:1fr 1fr}.as-kaynak{grid-template-columns:repeat(3,1fr)}.as-pasaport{grid-template-columns:1fr}.as-rehber{grid-template-columns:1fr 1fr}}
-@media (max-width:640px){.as-uclu,.as-ihaleler,.as-rehber{grid-template-columns:1fr}.as-sayilar .as-wrap{grid-template-columns:1fr 1fr}.as-sayi:nth-child(3){border-left:0}.as-sayi{border-top:1px solid var(--line)}.as-sayi:nth-child(-n+2){border-top:0}.as-kaynak{grid-template-columns:1fr 1fr}.as-uc{grid-template-columns:1fr 1fr}.as-uc label:first-child{grid-column:1/-1}.as-hero h1{font-size:clamp(32px,9vw,42px)}}`;
+@media (max-width:980px){.as-hero .as-wrap{grid-template-columns:1fr}.as-ihaleler{grid-template-columns:1fr 1fr}.as-uclu{grid-template-columns:1fr}.as-giris{flex-direction:row}.as-giris img{width:38%;aspect-ratio:auto;object-fit:cover}.as-giris i{margin-top:0}.as-araclar{grid-template-columns:1fr 1fr}.as-kaynak{grid-template-columns:repeat(3,1fr)}.as-pasaport{grid-template-columns:1fr}.as-rehber{grid-template-columns:1fr 1fr}}
+@media (max-width:640px){.as-giris{flex-direction:column}.as-giris img{width:100%;aspect-ratio:16/9}.as-giris i{margin-top:-40px}.as-ihaleler,.as-rehber{grid-template-columns:1fr}.as-sayilar .as-wrap{grid-template-columns:1fr 1fr}.as-sayi:nth-child(3){border-left:0}.as-sayi{border-top:1px solid var(--line)}.as-sayi:nth-child(-n+2){border-top:0}.as-kaynak{grid-template-columns:1fr 1fr}.as-uc{grid-template-columns:1fr 1fr}.as-uc label:first-child{grid-column:1/-1}.as-hero h1{font-size:clamp(32px,9vw,42px)}}`;
 
 const ISTEMCI = String.raw`(()=>{
 const $=id=>document.getElementById(id);
@@ -172,11 +172,11 @@ export async function anaSayfa(env, { page, html, esc, latestNews, CATS, ago }) 
 <div class="as-uclu">
 <a class="as-giris" href="/parsel-sorgu"><img src="/img/t2.jpg" alt="" loading="lazy" width="560" height="350"><div><i>${IK.parsel}</i><b>Parselini tanı</b><p>Ada ve parselle tarlanın gerçek sınırını uyduda ve 3B arazide görün.</p><ul><li>${IK.tik}Yüzölçümü, nitelik, mevkii</li><li>${IK.tik}Rakım ve yaklaşık eğim</li><li>${IK.tik}Paylaşılabilir bağlantı, KML</li></ul><span class="git">Parsel sorgula ${IK.ok}</span></div></a>
 <a class="as-giris" href="/ihaleler"><img src="/img/t4.jpg" alt="" loading="lazy" width="566" height="340"><div><i>${IK.ihale}</i><b>Fırsatı yakala</b><p>İcra, sulh hukuk ve hazine satışlarını il ve ilçeye göre tek yerden izleyin.</p><ul><li>${IK.tik}1. ve 2. artırma tarihleri</li><li>${IK.tik}Hisseli satış uyarısı, KDV, teminat</li><li>${IK.tik}Her ilanda kaynağa bağlantı</li></ul><span class="git">İhalelere bak ${IK.ok}</span></div></a>
-<a class="as-giris" href="/urun"><img src="/img/drip.jpg" alt="" loading="lazy" width="473" height="536" style="aspect-ratio:16/9"><div><i>${IK.urun}</i><b>Değerini bil</b><p>Ne ekilir, ne kazandırır? İlçenizin gerçek verimiyle hesaplayın.</p><ul><li>${IK.tik}117 ürün için ekim ve bakım rehberi</li><li>${IK.tik}TÜİK ilçe verimi, borsa fiyatları</li><li>${IK.tik}Dekar başına tahmini kazanç</li></ul><span class="git">Ürünlere bak ${IK.ok}</span></div></a>
+<a class="as-giris" href="/urun"><img src="/img/drip.jpg" alt="" loading="lazy" width="473" height="536" ><div><i>${IK.urun}</i><b>Değerini bil</b><p>Ne ekilir, ne kazandırır? İlçenizin gerçek verimiyle hesaplayın.</p><ul><li>${IK.tik}117 ürün için ekim ve bakım rehberi</li><li>${IK.tik}TÜİK ilçe verimi, borsa fiyatları</li><li>${IK.tik}Dekar başına tahmini kazanç</li></ul><span class="git">Ürünlere bak ${IK.ok}</span></div></a>
 </div></div></section>
 
 ${ihaleler.length ? `<section class="as-bolum acik"><div class="as-wrap">
-<div class="as-bas"><div><div class="as-kicker" style="color:var(--gold)">Güncel ihaleler</div><h2>Bu hafta öne çıkan arazi satışları</h2><p>İcra ilanlarının bilgileri ilanın tam metninden doğrulanır; hazine ihaleleri Milli Emlak'tan alınır.</p></div><a href="/ihaleler">Tüm ihaleler →</a></div>
+<div class="as-bas"><div><div class="as-kicker" style="color:var(--gold)">Güncel ihaleler</div><h2>Yeni eklenen arazi satışları</h2><p>İcra ilanlarının bilgileri ilanın tam metninden doğrulanır; hazine ihaleleri Milli Emlak'tan alınır.</p></div><a href="/ihaleler">Tüm ihaleler →</a></div>
 <div class="as-ihaleler">${ihaleler.map((x) => ihaleKart(x, esc)).join("")}</div>
 <p class="as-not"><span class="as-dogru">${IK.tik}Bilgiler ilan metninden doğrulandı</span> Teklif vermeden önce ilanın aslını ve şartnameyi mutlaka kontrol edin.</p>
 </div></section>` : ""}
@@ -187,7 +187,7 @@ ${ihaleler.length ? `<section class="as-bolum acik"><div class="as-wrap">
 <div><div class="as-kicker" style="color:var(--gold)">3B parsel sorgu</div><h2 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3.2vw,38px);line-height:1.12;margin:8px 0 0">Tapudaki numaradan tarlanın kendisine</h2>
 <ul class="as-liste"><li>${IK.tik}<span><b>Gerçek sınır:</b> Parsel çizgisi Tapu ve Kadastro'nun servisinden gelir, uydu fotoğrafının üzerine çizilir.</span></li><li>${IK.tik}<span><b>Arazi yapısı:</b> 3B görünümde tepe ve vadiler, ortalama rakım ve yaklaşık eğim.</span></li><li>${IK.tik}<span><b>Çevresi:</b> Aynı ilçedeki ihaleler, ilçede ne ekildiği, güncel ve geçmiş uydu görüntülerine bağlantı.</span></li><li>${IK.tik}<span><b>Paylaşım:</b> Bağlantıyı WhatsApp'tan gönderin ya da KML olarak Google Earth'te açın.</span></li></ul>
 <a class="as-btn" href="/parsel-sorgu">${IK.parsel}Parselini sorgula</a>
-<p class="as-not">Görseldeki değerler örnek bir parsele aittir. Sonuçlar bilgi amaçlıdır, resmî belge yerine geçmez.</p></div>
+<p class="as-not">Görsel temsilîdir; kutudaki değerler örnek bir parselin sorgu sonucudur. Sonuçlar bilgi amaçlıdır, resmî belge yerine geçmez.</p></div>
 </div></section>
 
 ${haberler.length ? `<section class="as-bolum acik"><div class="as-wrap">
