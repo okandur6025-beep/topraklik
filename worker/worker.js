@@ -9,7 +9,8 @@ import { milliEmlakTopla } from "./topla.js";
 import { bikAdim, bikDetay } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
 import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
-import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
+import { ARACLAR, aracSayfa, aracIndex } from "./araclar.js";
+import { parselApi, parselSayfa, PARSEL_CSS } from "./parsel.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { SATIS_TURU_SQL } from "./ihale.js";
 import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
@@ -231,7 +232,7 @@ function page({ title, description, path, body, current, jsonld, noindex }) {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">${MOBIL_META}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
-<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
+<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}${path === "/parsel-sorgu" ? PARSEL_CSS : ""}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
 <header class="top"><div class="wrap">${GERI_BTN}<a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
@@ -535,7 +536,8 @@ export default {
       if (path === "/hakkimizda") return html(page({ title: "Hakkımızda · Topraklık", description: "Topraklık; icra ve hazine arazi ihalelerini, parsel bilgisini, tarım rehberlerini ve piyasa fiyatlarını tek yerde toplayan bağımsız bir platformdur.", path: "/hakkimizda", body: HAKKIMIZDA, current: "" }), 200, 86400);
       if (path === "/iletisim") return html(page({ title: "İletişim · Topraklık", description: "Topraklık ile iletişim: öneri, düzeltme ve iş birliği için e-posta adresleri.", path: "/iletisim", body: ILETISIM, current: "" }), 200, 86400);
       if (path === "/araclar") return aracIndex({ esc, page, html });
-      if (path === "/parsel-sorgu") return parselSorgu({ esc, page, html });
+      if (path === "/parsel-sorgu") return parselSayfa({ esc, page, html, ARACLAR });
+      if (path.startsWith("/api/idari/") || path === "/api/parsel") { const r = await parselApi(req, env, ctxExec, url); if (r) return r; }
       const ar = path.match(/^\/araclar\/([a-z0-9-]+)$/);
       if (ar && ARACLAR[ar[1]]) return aracSayfa(ar[1], { esc, page, html });
       const ih = path.match(/^\/ihaleler(?:\/([a-z0-9-]+))?(?:\/([a-z0-9-]+))?$/);
