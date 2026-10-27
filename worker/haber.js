@@ -52,6 +52,11 @@ Sana bir haberin başlığı ve kaynak metninden parçalar verilecek. YALNIZCA �
 - konu: şunlardan biri: tahil, meyve, sebze, hayvan, destek, fiyat, arazi, su, iklim, teknoloji, genel
 - urunler: metinde geçen tarım ürünleri (ör. "buğday", "fındık"); yoksa [].
 - iller: metinde geçen Türkiye illeri (ör. "Konya"); yoksa [].
+Konuya göre "onem" ipuçları:
+- Arazi/tarla/arsa satış veya ihale haberi: "fırsat", "kaçırmayın", "değerlendirin" gibi satış dili ASLA kullanma. Bunun yerine teklif öncesi neyin kontrol edilmesi gerektiğini yaz: düşük bedelli parseller çoğu zaman küçük, hisseli, yolu olmayan ya da imarsız olur; tapu kaydı, imar durumu, hisse oranı ve şartname incelenmeli; teminat ve ihale tarihi kaçırılmamalı.
+- Hibe/destek haberi: kimler başvurabilir, son tarih, destek oranı; başvuru için ne hazırlanmalı.
+- Fiyat/piyasa haberi: üreticinin satış ya da ekim kararına, maliyetine etkisi.
+- Üretim/hasat haberi: bölge üreticileri için fiyat, rekolte veya ekim planı açısından anlamı.
 Kurallar: Metinde olmayan rakam, tarih, kurum veya iddia UYDURMA. Bilgi azsa kısa yaz. Tıklama tuzağı ve abartı dili kullanma. Haber reklam ya da ilan diliyle yazılmışsa sakin ve tarafsız aktar. Türkçe yaz.`;
 
 const trk = (s) => String(s || "").toLocaleLowerCase("tr").replace(/\(.*?\)/g, "").trim();
@@ -244,7 +249,7 @@ export function bulten(rows, ctx) {
   let h = `<section class="bt-ust"><article class="bt-lead" style="--k:${kk(lead).k}"><a href="${esc(ic(lead))}" tabindex="-1" aria-hidden="true">${haberGorsel(lead, "buyuk")}</a>
 <div class="hb-ust"><span class="hb-kicker">Manşet · ${esc(CATS[lead.category] || "Gündem")}</span><span class="hb-zaman">${esc(lead.source)} · ${esc(ctx.ago(lead.published_at))}</span></div>
 <h2><a href="${esc(ic(lead))}">${esc(lead.title)}</a></h2><p class="hb-ozet">${esc(lead.ozet)}</p>${onemHtml(lead, esc)}<div class="hb-alt"><span></span><a href="/haberler/${esc(lead.id)}">Haberin ayrıntısı →</a></div></article>
-${gun.length ? `<aside class="bt-gun"><h3>Bugün 1 dakikada</h3><p class="bt-gun-alt">Günün öne çıkanları, tek cümleyle.</p><ol>${gun.map((n) => `<li><div><a href="${esc(ic(n))}">${esc(n.title)}</a><span>${esc(ilkCumle(n.onem || n.ozet))}</span></div></li>`).join("")}</ol></aside>` : ""}</section>`;
+${gun.length ? `<aside class="bt-gun"><h3>Bugün 1 dakikada</h3><p class="bt-gun-alt">Günün öne çıkanları, tek cümleyle.</p><ol>${gun.map((n) => `<li><div><a href="${esc(ic(n))}">${esc(n.title)}</a><span>${esc(ilkCumle(n.ozet || n.onem))}</span></div></li>`).join("")}</ol></aside>` : ""}</section>`;
   const kalan = zengin.filter((n) => !kullan.has(n));
   const yan = kalan.slice(0, 3); yan.forEach(al);
   if (yan.length === 3) h += `<section class="bt-yanlar">${yan.map((n) => yanKart(n, ctx)).join("")}</section>`; else yan.forEach((n) => kullan.delete(n));
