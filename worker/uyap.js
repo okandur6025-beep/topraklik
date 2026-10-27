@@ -1,5 +1,5 @@
 /* UYAP e-Satış taşınmaz ilanları (ilan.gov.tr üzerinden, kaynak kodu "UYAP").
-   Liste başlıkları bilgi taşımaz; her ilanın metni bir kez okunur, tarla/arsa/bağ-bahçe olanlar kaydedilir.
+   Liste başlıkları bilgi taşımaz; her ilanın metni bir kez okunur. Tarla, arsa, bağ-bahçe, konut, işyeri ve diğer tüm taşınmazlar kaydedilir.
    Aynı satış ilan.gov.tr icra ilanlarında (bik) da varsa yeni kayıt açılmaz, o kayıt ada/parsel ve tarihlerle zenginleştirilir. */
 import { ihaleYukle, ihaleSema } from "./ihale.js";
 
@@ -7,6 +7,7 @@ const API = "https://www.ilan.gov.tr/api/api/services/app/";
 const H = { "content-type": "application/json-patch+json", accept: "text/plain", "x-request-origin": "IGT-UI", "x-requested-with": "XMLHttpRequest", origin: "https://www.ilan.gov.tr", referer: "https://www.ilan.gov.tr/ilan/tum-ilanlar", "user-agent": "Mozilla/5.0 (compatible; TopraklikBot/1.0; +https://topraklik.com)" };
 const KELIME = "A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû";
 
+const TUM_TASINMAZ = "2026-10-27T14:00:00Z";
 const num = (s) => parseFloat(String(s || "").replace(/\./g, "").replace(",", ".")) || null;
 const tarih = (g, a, y, s) => `${y}-${a}-${g}${s ? "T" + s : ""}`;
 const buyuk = (t) => String(t || "").toLocaleLowerCase("tr").replace(/(^|[\s(-])\S/g, (c) => c.toLocaleUpperCase("tr"));
@@ -28,11 +29,14 @@ export function uyapCoz(a, html, { IL_AD, slugify }) {
     || oz.match(new RegExp(`([${KELIME}]{3,20})\\s+(?:vasfında|vasıflı|nitelikli|niteliğinde)`, "i"));
   const nitelik = nit ? nit[1].trim() : "";
   let cins = null;
-  if (/tarla|tarım arazi|çayır|mera/i.test(nitelik)) cins = "Tarla";
+  if (/mesken|daire|konut|villa|apartman|yazlık|(^|\s)ev(\s|$)|evi(\s|$)/i.test(nitelik)) cins = "Konut";
+  else if (/dükk[aâ]n|işyeri|iş yeri|ofis|büro|mağaza|depo|fabrika|atölye|imalathane|otel|akaryakıt|plaza|ticari|sanayi/i.test(nitelik)) cins = "İşyeri";
+  else if (/tarla|tarım arazi|çayır|mera/i.test(nitelik)) cins = "Tarla";
   else if (/zeytin/i.test(nitelik)) cins = "Zeytinlik";
   else if (/bağ|bahçe|fındık|meyve/i.test(nitelik)) cins = "Bağ-Bahçe";
   else if (/arsa/i.test(nitelik)) cins = "Arsa";
-  if (!cins) return { ilgili: false, nitelik };
+  else if (/bina|ahır|samanlık|ambar|kerpiç|kargir|ahşap|bağımsız bölüm/i.test(nitelik)) cins = "Bina";
+  else cins = "Diğer taşınmaz"; /* tüm UYAP taşınmaz ilanları alınır; nitelik okunamasa da */
   const il_slug0 = slugify(a.addressCityName || "");
   const yer = oz.match(new RegExp(`([${KELIME}]+)\\s+İl(?:i|\\b)[,\\s]+([${KELIME}]+)\\s+İlçe(?:si)?\\b[,\\s]+(.{2,40}?)\\s+(?:Mahallesi|Mahalle\\s*/\\s*Köy|Mahalle|Köyü|Mah\\.?|Mh\\.?)`, "i"));
   const il_slug = yer && IL_AD[slugify(yer[1])] ? slugify(yer[1]) : il_slug0;
@@ -86,7 +90,8 @@ export async function uyapAdim(env, { IL_AD, slugify, butce = 18 } = {}) {
     const ads = res.ads || [];
     if (!ads.length) { d.skip = 0; d.tur++; break; }
     const ids = ads.map((a) => String(a.id));
-    const var_ = new Set(((await env.DB.prepare(`SELECT id FROM uyap_gorulen WHERE id IN (${ids.map(() => "?").join(",")})`).bind(...ids).all()).results || []).map((r) => r.id));
+    /* 27 Ekim 2026'dan önce "ilgisiz" diye atlanan ev/işyeri ilanları yeniden okunur */
+    const var_ = new Set(((await env.DB.prepare(`SELECT id FROM uyap_gorulen WHERE id IN (${ids.map(() => "?").join(",")}) AND (ilgili = 1 OR at >= '${TUM_TASINMAZ}')`).bind(...ids).all()).results || []).map((r) => r.id));
     const yeni = ads.filter((a) => !var_.has(String(a.id)));
     let bitti = true;
     for (const a of yeni) {
@@ -99,7 +104,7 @@ export async function uyapAdim(env, { IL_AD, slugify, butce = 18 } = {}) {
     if (bitti) d.skip += 20; else break;
   }
   const now = new Date().toISOString();
-  if (gorulen.length) await env.DB.prepare("INSERT OR IGNORE INTO uyap_gorulen (id, ilgili, nitelik, at) SELECT json_extract(value,'$.id'), json_extract(value,'$.ilgili'), json_extract(value,'$.nitelik'), ?2 FROM json_each(?1)").bind(JSON.stringify(gorulen), now).run();
+  if (gorulen.length) await env.DB.prepare("INSERT OR REPLACE INTO uyap_gorulen (id, ilgili, nitelik, at) SELECT json_extract(value,'$.id'), json_extract(value,'$.ilgili'), json_extract(value,'$.nitelik'), ?2 FROM json_each(?1)").bind(JSON.stringify(gorulen), now).run();
   if (kayitlar.length) {
     // icra (bik) kaydı varsa onu zenginleştir, yoksa yeni kayıt
     const anahtarli = kayitlar.map((k) => ({ ...k, anahtar: satisAnahtari(k.yer, k.dosya, slugify) }));
