@@ -1,13 +1,14 @@
 /* UYAP e-Satış taşınmaz ilanları (ilan.gov.tr üzerinden, kaynak kodu "UYAP").
    Liste başlıkları bilgi taşımaz; her ilanın metni bir kez okunur. Tarla, arsa, bağ-bahçe, konut, işyeri ve diğer tüm taşınmazlar kaydedilir.
    Aynı satış ilan.gov.tr icra ilanlarında (bik) da varsa yeni kayıt açılmaz, o kayıt ada/parsel ve tarihlerle zenginleştirilir. */
-import { ihaleYukle, ihaleSema } from "./ihale.js";
+import { ihaleYukle, ihaleSema, dogrulanmis, dogrulamaYaz } from "./ihale.js";
 
 const API = "https://www.ilan.gov.tr/api/api/services/app/";
 const H = { "content-type": "application/json-patch+json", accept: "text/plain", "x-request-origin": "IGT-UI", "x-requested-with": "XMLHttpRequest", origin: "https://www.ilan.gov.tr", referer: "https://www.ilan.gov.tr/ilan/tum-ilanlar", "user-agent": "Mozilla/5.0 (compatible; TopraklikBot/1.0; +https://topraklik.com)" };
 const KELIME = "A-Za-zÇĞİÖŞÜçğıöşüÂâÎîÛû";
 
-const TUM_TASINMAZ = "2026-10-27T14:00:00Z";
+/* Bu tarihten önce okunan ilanlar yeni metin okuyucusuyla yeniden okunur */
+const TUM_TASINMAZ = "2026-10-27T16:20:00Z";
 const num = (s) => parseFloat(String(s || "").replace(/\./g, "").replace(",", ".")) || null;
 const tarih = (g, a, y, s) => `${y}-${a}-${g}${s ? "T" + s : ""}`;
 const buyuk = (t) => String(t || "").toLocaleLowerCase("tr").replace(/(^|[\s(-])\S/g, (c) => c.toLocaleUpperCase("tr"));
@@ -52,16 +53,17 @@ export function uyapCoz(a, html, { IL_AD, slugify }) {
   const miras = /SADECE MALİK OLAN MİRASÇILAR/i.test(t);
   const dosya = ((a.title || "").match(/(\d{4}\/\d+)/) || [])[1] || null;
   const birim = (a.title || "").replace(/\s*\d{4}\/\d+.*$/, "").trim();
-  if (!a1) return { ilgili: false, nitelik, neden: "tarih yok" };
+  const dg = dogrulanmis(html).alan;
+  if (!a1 && !dg.takvim) return { ilgili: false, nitelik, neden: "tarih yok" };
   return {
     ilgili: true,
-    kayit: {
+    kayit: { ...{
       id: "uyap" + a.id, ilan_id: String(a.id), il: IL_AD[il_slug] || buyuk(a.addressCityName), il_slug, ilce, mahalle, ada: ap?.[1] || null, parsel: ap?.[2] || null,
       cins, imar: null, m2: m2m ? num(m2m[1]) : null, bedel: kiy ? num(kiy[1]) : null, teminat: kiy ? Math.round(num(kiy[1]) * 0.1) : null,
-      tarih: tarih(a1[1], a1[2], a1[3], a1[4]), bitis: a2 ? tarih(a2[1], a2[2], a2[3]) : null, yer: birim,
+      tarih: a1 ? tarih(a1[1], a1[2], a1[3], a1[4]) : (() => { const t = JSON.parse(dg.takvim); return (t.a1 || t.a2).bas; })(), bitis: a2 ? tarih(a2[1], a2[2], a2[3]) : null, yer: birim,
       usul: (miras ? "1. artırma yalnızca mirasçı malikler arasında (7589 sayılı Kanun); 2. artırma herkese açık. " : "") + "UYAP e-Satış elektronik açık artırma" + (kdv ? ` · KDV %${kdv[1]}` : ""),
       hisse: null, amac: null, tasinmaz_no: null, link: "https://www.ilan.gov.tr" + a.urlStr, foto: 0, nitelik: buyuk(nitelik), dosya,
-    },
+    }, ...dg },
   };
 }
 
@@ -114,13 +116,10 @@ export async function uyapAdim(env, { IL_AD, slugify, butce = 18 } = {}) {
     for (const k of anahtarli) { const bid = k.anahtar && bikMap.get(k.anahtar); if (bid) guncel.push({ ...k, bid }); else yeniler.push(k); }
     if (yeniler.length) { await ihaleYukle(env, { kaynak: "uyap", tip: "satis", items: yeniler }, slugify); eklenen = yeniler.length; }
     if (guncel.length) {
-      await env.DB.prepare(`UPDATE ihale SET ada = COALESCE(ada, (SELECT json_extract(value,'$.ada') FROM json_each(?1) WHERE json_extract(value,'$.bid') = ihale.id)),
-        parsel = COALESCE(parsel, (SELECT json_extract(value,'$.parsel') FROM json_each(?1) WHERE json_extract(value,'$.bid') = ihale.id)),
-        mahalle = COALESCE(mahalle, (SELECT json_extract(value,'$.mahalle') FROM json_each(?1) WHERE json_extract(value,'$.bid') = ihale.id)),
-        teminat = COALESCE(teminat, (SELECT json_extract(value,'$.teminat') FROM json_each(?1) WHERE json_extract(value,'$.bid') = ihale.id)),
-        bitis = COALESCE((SELECT json_extract(value,'$.bitis') FROM json_each(?1) WHERE json_extract(value,'$.bid') = ihale.id), bitis),
-        usul = COALESCE((SELECT json_extract(value,'$.usul') FROM json_each(?1) WHERE json_extract(value,'$.bid') = ihale.id), usul)
-        WHERE id IN (SELECT json_extract(value,'$.bid') FROM json_each(?1))`).bind(JSON.stringify(guncel)).run();
+      for (const k of guncel) {
+        await env.DB.prepare("UPDATE ihale SET ada = COALESCE(ada, ?2), parsel = COALESCE(parsel, ?3), mahalle = COALESCE(mahalle, ?4), usul = COALESCE(?5, usul) WHERE id = ?1").bind(k.bid, k.ada, k.parsel, k.mahalle, k.usul).run();
+        await dogrulamaYaz(env, k.bid, k);
+      }
       zengin = guncel.length;
     }
   }

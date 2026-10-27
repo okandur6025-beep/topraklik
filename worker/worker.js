@@ -6,7 +6,7 @@
 import { URUN, URUN_LISTE, IL_AD, urunleriIl, urunPage, urunJsonLd, URUN_CSS, fiyatUygula } from "./urun.js";
 import { fiyatAdim, urunFiyat } from "./fiyat.js";
 import { milliEmlakTopla } from "./topla.js";
-import { bikAdim, bikDetay } from "./bik.js";
+import { bikAdim, bikDetay, bikDogrula } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
 import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
 import { ARACLAR, aracSayfa, aracIndex } from "./araclar.js";
@@ -580,6 +580,7 @@ export default {
             if (url.pathname === "/admin/bakim") { const out = []; for (const q of ["CREATE INDEX IF NOT EXISTS geo_mahalle_ilce ON geo_mahalle (ilce_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_il ON geo_ilce (il_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_done ON geo_ilce (mah_done)", "CREATE INDEX IF NOT EXISTS ihale_aktif_bitis ON ihale (aktif, bitis)", "CREATE INDEX IF NOT EXISTS ihale_kaynak_il ON ihale (kaynak, il_slug)", "UPDATE ihale SET bitis = substr(tarih, 1, 10) WHERE bitis IS NULL", "CREATE INDEX IF NOT EXISTS ilce_uretim_slug ON ilce_uretim (slug, yil)", "ALTER TABLE ihale ADD COLUMN satis_turu TEXT", SATIS_TURU_SQL, "CREATE INDEX IF NOT EXISTS ihale_tur ON ihale (satis_turu)"]) { try { await env.DB.prepare(q).run(); out.push("ok: " + q.slice(0, 60)); } catch (e) { out.push("hata: " + e.message.slice(0, 120)); } } return Response.json(out); }
         if (url.pathname === "/admin/onbellek-sil") { const out = {}; for (const u of (url.searchParams.get("u") || "").split(",")) out[u] = await caches.default.delete(new Request(SITE + u)); return Response.json(out); }
         if (url.pathname === "/admin/runs") return Response.json((await env.DB.prepare("SELECT * FROM runs ORDER BY id DESC LIMIT 30").all()).results);
+        if (url.pathname === "/admin/bik-dogrula") return Response.json(await bikDogrula(env, Math.min(80, parseInt(url.searchParams.get("n") || "20", 10))));
         if (url.pathname === "/admin/uyap-basa") { await env.DB.prepare("INSERT OR REPLACE INTO durum (k, v) VALUES ('uyap', ?1)").bind(JSON.stringify({ skip: 0, tur: 0 })).run(); return Response.json({ ok: true }); }
         if (url.pathname === "/admin/uyap") return Response.json(await uyapAdim(env, { IL_AD, slugify, butce: parseInt(url.searchParams.get("n") || "18", 10) }));
         if (url.pathname === "/admin/bik") return Response.json(await bikAdim(env, { IL_AD, slugify, zorla: url.searchParams.get("zorla") === "1", sayfaSayisi: parseInt(url.searchParams.get("n") || "12", 10) }));
@@ -610,6 +611,7 @@ export default {
       if (min % 30 === 0) await is("news", () => collectNews(env, Math.floor(min / 30)));
       if (min % 2 === 1) await is("uyap", () => uyapAdim(env, { IL_AD, slugify, butce: 120 }));
       if (min % 4 === 2) await is("haber", () => haberAdim(env, 3));
+      if (min % 2 === 0) await is("bik-dogrula", () => bikDogrula(env, 30));
       if (min % 10 === 4) await is("geo", () => geoStep(env));
     })());
   },

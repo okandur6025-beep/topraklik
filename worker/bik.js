@@ -1,6 +1,6 @@
 /* ilan.gov.tr (Basın İlan Kurumu) icra ve mahkeme satış ilanları: tarla ve arsa.
    Worker zamanlı görevi her gün tüm listeyi parça parça tarar. */
-import { ihaleYukle, ihaleSema } from "./ihale.js";
+import { ihaleYukle, ihaleSema, dogrulanmis, dogrulamaYaz } from "./ihale.js";
 
 const API = "https://www.ilan.gov.tr/api/api/services/app/";
 const H = { "content-type": "application/json-patch+json", accept: "text/plain", "x-request-origin": "IGT-UI", "x-requested-with": "XMLHttpRequest", origin: "https://www.ilan.gov.tr", referer: "https://www.ilan.gov.tr/ilan/tum-ilanlar", "user-agent": "Mozilla/5.0 (compatible; TopraklikBot/1.0; +https://topraklik.com)" };
@@ -74,7 +74,7 @@ export async function bikAdim(env, { IL_AD, slugify, sayfaSayisi = 12, zorla = f
   d.toplam += temiz.length;
   let kalkan = 0;
   if (d.ki >= BIK_KAT.length) {
-    const r = await env.DB.prepare("UPDATE ihale SET aktif = 0 WHERE kaynak = 'bik' AND aktif = 1 AND guncel < ?1").bind(d.baslangic).run();
+    const r = await env.DB.prepare("UPDATE ihale SET aktif = 0 WHERE kaynak = 'bik' AND aktif = 1 AND guncel < ?1 AND NOT (dogrulandi = 1 AND bitis >= ?2)").bind(d.baslangic, new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10)).run();
     kalkan = r.meta?.changes || 0; d.bitti = true;
     await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'ihale-bik', ?2)").bind(new Date().toISOString(), `toplam ${d.toplam}, kalkan ${kalkan}`).run();
   }
@@ -99,4 +99,20 @@ export async function bikDetay(ilanId, ctx) {
   const ap = metin.match(/(\d+)\s*ada[,\s]*(\d+)\s*parsel/i);
   const mah = metin.match(/([A-ZÇĞİÖŞÜa-zçğıöşü.\s]{3,40}?)\s+(Mahallesi|Köyü|Mah\.)/);
   return { metin, ada: ap?.[1], parsel: ap?.[2], mahalle: mah ? (mah[1].trim().split(/\s+/).slice(-2).join(" ") + " " + mah[2]).replace("Mah.", "Mahallesi") : null };
+}
+
+/* Arka planda: BİK ilanlarını tam metinden doğrula (bedel, alan, hisse, KDV, 1. ve 2. artırma).
+   1. artırması geçip 2. artırması süren ilanlar yeniden aktif olur. */
+export async function bikDogrula(env, adet = 30) {
+  const sinir = new Date(Date.now() + 3 * 3600e3 - 45 * 864e5).toISOString().slice(0, 10);
+  const rows = (await env.DB.prepare("SELECT id, ilan_id FROM ihale WHERE kaynak = 'bik' AND dogrulandi IS NULL AND bitis >= ?1 ORDER BY aktif DESC, bitis LIMIT ?2").bind(sinir, adet).all()).results || [];
+  let ok = 0, bos = 0;
+  for (const r of rows) {
+    try {
+      const d = await bikDetay(r.ilan_id);
+      if (!d?.metin) { await env.DB.prepare("UPDATE ihale SET dogrulandi = 0 WHERE id = ?1").bind(r.id).run(); bos++; continue; }
+      await dogrulamaYaz(env, r.id, dogrulanmis(d.metin).alan); ok++;
+    } catch (e) { bos++; }
+  }
+  return { denenen: rows.length, dogrulanan: ok, okunamayan: bos };
 }

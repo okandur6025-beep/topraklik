@@ -2,13 +2,17 @@
    Veri, Türkiye IP'si gerektirdiği için kullanıcının bilgisayarındaki tarayıcıdan toplanır
    ve /admin/ihale-yukle ucuna gönderilir. */
 
+import { metinCoz, asama, aralik, gunAy } from "./ilanmetin.js";
+
 export const IHALE_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS ihale (id TEXT PRIMARY KEY, kaynak TEXT, tip TEXT, ilan_id TEXT, il TEXT, il_slug TEXT, ilce TEXT, ilce_slug TEXT, mahalle TEXT, ada TEXT, parsel TEXT, cins TEXT, imar TEXT, m2 REAL, bedel REAL, teminat REAL, tarih TEXT, yer TEXT, usul TEXT, hisse TEXT, amac TEXT, tasinmaz_no TEXT, link TEXT, foto INTEGER, aktif INTEGER DEFAULT 1, ilk_gorulme TEXT, guncel TEXT)`,
   `CREATE INDEX IF NOT EXISTS ihale_liste ON ihale (aktif, tarih)`,
   `CREATE INDEX IF NOT EXISTS ihale_il ON ihale (il_slug, ilce_slug)`,
 ];
-const COLS = ["id", "kaynak", "tip", "ilan_id", "il", "il_slug", "ilce", "ilce_slug", "mahalle", "ada", "parsel", "cins", "imar", "m2", "bedel", "teminat", "tarih", "yer", "usul", "hisse", "amac", "tasinmaz_no", "link", "foto", "bitis", "nitelik", "dosya", "satis_turu"];
-const EK_KOLON = ["bitis TEXT", "nitelik TEXT", "dosya TEXT", "satis_turu TEXT"];
+const COLS = ["id", "kaynak", "tip", "ilan_id", "il", "il_slug", "ilce", "ilce_slug", "mahalle", "ada", "parsel", "cins", "imar", "m2", "bedel", "teminat", "tarih", "yer", "usul", "hisse", "amac", "tasinmaz_no", "link", "foto", "bitis", "nitelik", "dosya", "satis_turu", "kdv", "takvim", "hisse_m2", "dogrulandi"];
+const EK_KOLON = ["bitis TEXT", "nitelik TEXT", "dosya TEXT", "satis_turu TEXT", "kdv INTEGER", "takvim TEXT", "hisse_m2 REAL", "dogrulandi INTEGER"];
+/* İlan metninden doğrulanmış alanlar, liste verisiyle (ör. BİK başlığı) ezilmez */
+const KORU = ["m2", "bedel", "bitis", "hisse", "hisse_m2", "kdv", "takvim", "teminat"];
 export const SATIS_TURU = { icra: "İcra dairesi", sulh: "Sulh hukuk (ortaklığın giderilmesi)", mahkeme: "Diğer mahkeme satışı", iflas: "İflas dairesi", hazine: "Hazine (Milli Emlak)" };
 export function satisTuru(yer, kaynak) {
   if (kaynak === "milliemlak") return "hazine";
@@ -42,7 +46,7 @@ export async function ihaleYukle(env, body, slugify) {
   const now = new Date().toISOString();
   const rows = items.map((x) => ({ ...x, kaynak, tip, il_slug: x.il_slug || slugify(x.il || ""), ilce_slug: slugify(x.ilce || ""), bitis: x.bitis || (x.tarih || "").slice(0, 10), satis_turu: satisTuru(x.yer, kaynak) }));
   const sel = COLS.map((c) => `json_extract(value, '$.${c}')`).join(", ");
-  const upd = COLS.filter((c) => c !== "id").map((c) => `${c} = excluded.${c}`).join(", ");
+  const upd = COLS.filter((c) => c !== "id").map((c) => (c === "dogrulandi" ? "dogrulandi = coalesce(excluded.dogrulandi, dogrulandi)" : KORU.includes(c) ? `${c} = CASE WHEN dogrulandi = 1 AND excluded.dogrulandi IS NULL THEN coalesce(${c}, excluded.${c}) ELSE excluded.${c} END` : `${c} = excluded.${c}`)).join(", ");
   let n = 0;
   for (let i = 0; i < rows.length; i += 400) {
     const part = rows.slice(i, i + 400);
@@ -63,6 +67,27 @@ const nf = (n) => (n == null ? "—" : Math.round(n).toLocaleString("tr-TR"));
 const tl = (n) => (n ? nf(n) + " TL" : "—");
 const trTarih = (t) => { if (!t) return "—"; const [d, s] = t.split("T"); const [y, m, g] = d.split("-"); return `${+g} ${["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"][+m - 1]} ${y}${s ? " · " + s.slice(0, 5) : ""}`; };
 const kalan = (t) => { const d = Math.round((Date.parse(t.slice(0, 10)) - Date.parse(bugun())) / 864e5); return d < 0 ? "ihale tarihi geçti" : d === 0 ? "bugün" : d === 1 ? "yarın" : `${d} gün kaldı`; };
+/* İlan metninden doğrulanmış alanlar */
+export function dogrulanmis(metin) {
+  const f = metinCoz(metin);
+  const o = { dogrulandi: 1 };
+  if (f.m2) o.m2 = f.m2;
+  if (f.kiymet) { o.bedel = f.kiymet; o.teminat = Math.round(f.kiymet * 0.1); }
+  if (f.hisse) o.hisse = f.hisse;
+  if (f.hisse_m2) o.hisse_m2 = f.hisse_m2;
+  if (f.kdv != null) o.kdv = f.kdv;
+  if (f.takvim) { o.takvim = JSON.stringify(f.takvim); const son = (f.takvim.a2 || f.takvim.a1); if (son) o.bitis = son.bit.slice(0, 10); }
+  if (f.ada && f.parsel) { o.ada = f.ada; o.parsel = f.parsel; }
+  return { alan: o, ham: f };
+}
+export async function dogrulamaYaz(env, id, o) {
+  const k = ["m2", "bedel", "teminat", "hisse", "hisse_m2", "kdv", "takvim", "bitis"].filter((c) => o[c] != null);
+  await env.DB.prepare(`UPDATE ihale SET ${k.map((c, i) => `${c} = ?${i + 2}`).join(", ")}${k.length ? ", " : ""}dogrulandi = 1, aktif = CASE WHEN ${o.bitis ? `?${k.length + 2} >= date('now')` : "1"} THEN 1 ELSE aktif END WHERE id = ?1`).bind(id, ...k.map((c) => o[c]), ...(o.bitis ? [o.bitis] : [])).run();
+}
+const satilanM2 = (x) => x.hisse_m2 || x.m2;
+const hisseli = (x) => !!(x.hisse && x.kaynak !== "milliemlak" && /\d+\s*\/\s*\d+/.test(x.hisse));
+const TUR_KISA = { icra: "İcra dairesi", sulh: "Sulh hukuk", mahkeme: "Mahkeme satışı", iflas: "İflas dairesi", hazine: "Hazine" };
+const turEtiket = (x) => (x.kaynak === "milliemlak" ? `Hazine ${TIP[x.tip] === "Kiralama" ? "kiralama" : "satış"}` : TUR_KISA[x.satis_turu] || "İcra satışı");
 const dekar = (m2) => (m2 >= 1000 ? ` (${(m2 / 1000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} dönüm)` : "");
 
 export const IHALE_CSS = `.ih-dugmeler{display:flex;flex-wrap:wrap;gap:8px}.ih-3b{background:#2E5130!important;color:#fff!important;border-color:#2E5130!important}
@@ -75,6 +100,7 @@ export const IHALE_CSS = `.ih-dugmeler{display:flex;flex-wrap:wrap;gap:8px}.ih-3
 .ic .alt{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:8px}
 .btn{display:inline-block;border-radius:9px;padding:8px 12px;font-weight:700;font-size:14px;text-decoration:none;border:1px solid var(--green);color:var(--green);background:none;cursor:pointer;font-family:inherit}
 .btn.dolu{background:var(--green);color:#fff}
+.tag.hisse{background:#FBE9D6;color:#8A4A12}
 .gun{display:inline-block;font-size:12px;font-weight:800;border-radius:999px;padding:2px 9px;background:var(--soft);color:var(--gold)}
 .filt{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 18px}
 .filt label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:700;color:var(--muted)}
@@ -84,13 +110,13 @@ export const IHALE_CSS = `.ih-dugmeler{display:flex;flex-wrap:wrap;gap:8px}.ih-3
 .ozet{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}.ozet span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px}.ozet b{font-size:17px;color:var(--green)}`;
 
 function kart(x, esc) {
-  const birim = x.m2 && x.bedel ? x.bedel / x.m2 : 0;
-  const baslik = `${x.cins || "Taşınmaz"} · ${nf(x.m2)} m²${dekar(x.m2)}`;
-  return `<div class="ic"><div><span class="tag">${esc(x.satis_turu === "hazine" || !x.satis_turu ? `${KAYNAK[x.kaynak]?.tur || ""} ${TIP[x.tip] || ""}` : SATIS_TURU[x.satis_turu].replace(" (ortaklığın giderilmesi)", ""))}</span><span class="gun">${esc(kalan(x.tarih || ""))}</span></div>
+  const sm = satilanM2(x), birim = sm && x.bedel && x.tip !== "kira" ? x.bedel / sm : 0, h = hisseli(x);
+  const baslik = `${x.cins || "Taşınmaz"} · ${x.m2 ? `${nf(sm)} m²${h ? " hisse" : dekar(sm)}` : "alan ilanda"}`;
+  return `<div class="ic"><div><span class="tag">${esc(turEtiket(x))}</span>${h ? `<span class="tag hisse">Hisseli</span>` : ""}<span class="gun">${esc(asama(x, bugun()).metin)}</span></div>
 <h3><a href="/ihaleler/ilan/${esc(x.id)}">${esc(baslik)}</a></h3>
 <div class="yer">${esc([x.il + " / " + x.ilce, x.mahalle || x.nitelik].filter(Boolean).join(" · "))}</div>
 <div class="fiyat">${x.bedel ? tl(x.bedel) : "Bedel ilanda"}${x.tip === "kira" && x.bedel ? ` <small style="font-size:13px;color:var(--muted)">yıllık</small>` : ""}</div>
-<dl>${x.ada ? `<dt>Ada / parsel</dt><dd>${esc(x.ada)} / ${esc(x.parsel || "—")}</dd>` : ""}${birim ? `<dt>m² fiyatı</dt><dd>${nf(birim)} TL</dd>` : ""}${x.teminat ? `<dt>Teminat</dt><dd>${tl(x.teminat)}</dd>` : ""}${x.dosya ? `<dt>Dosya</dt><dd>${esc(x.dosya)}</dd>` : ""}<dt>${ICRA(x.kaynak) ? "1. satış" : "İhale"}</dt><dd>${esc(trTarih(x.tarih))}</dd>${x.amac ? `<dt>Amaç</dt><dd>${esc(x.amac)}</dd>` : ""}</dl>
+<dl>${h && x.m2 ? `<dt>Toplam alan</dt><dd>${nf(x.m2)} m²</dd>` : ""}${x.ada ? `<dt>Ada / parsel</dt><dd>${esc(x.ada)} / ${esc(x.parsel || "—")}</dd>` : ""}${birim ? `<dt>m² fiyatı</dt><dd>${nf(birim)} TL</dd>` : ""}${x.teminat ? `<dt>Teminat</dt><dd>${tl(x.teminat)}</dd>` : ""}${x.dosya ? `<dt>Dosya</dt><dd>${esc(x.dosya)}</dd>` : ""}${(() => { let tk = null; try { tk = JSON.parse(x.takvim || "null"); } catch {} return tk ? `${tk.a1 ? `<dt>1. artırma</dt><dd>${esc(aralik(tk.a1))}</dd>` : ""}${tk.a2 ? `<dt>2. artırma</dt><dd>${esc(aralik(tk.a2))}</dd>` : ""}` : `<dt>${ICRA(x.kaynak) ? "1. satış" : "İhale"}</dt><dd>${esc(trTarih(x.tarih))}</dd>`; })()}${x.amac ? `<dt>Amaç</dt><dd>${esc(x.amac)}</dd>` : ""}</dl>
 <div class="alt"><a class="btn dolu" href="/ihaleler/ilan/${esc(x.id)}">Detay</a><a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener nofollow">${esc(KAYNAK[x.kaynak]?.ad || "Kaynak")}'ta gör</a></div></div>`;
 }
 
@@ -170,30 +196,44 @@ export async function ihaleDetay(env, id, ctx) {
   let x = null;
   try { x = await env.DB.prepare("SELECT * FROM ihale WHERE id = ?1").bind(id).first(); } catch (e) {}
   if (!x) return null;
-  const gecti = !x.aktif || (x.bitis || (x.tarih || "").slice(0, 10)) < bugun();
   const icra = ICRA(x.kaynak);
-  let ek = null;
+  let ek = null, dg = null;
   if (icra && ctx.bikDetay) { try { ek = await ctx.bikDetay(x.ilan_id, ctx.exec); } catch (e) {} }
   if (ek) { x.ada = x.ada || ek.ada; x.parsel = x.parsel || ek.parsel; x.mahalle = x.mahalle || ek.mahalle; }
-  const birim = x.m2 && x.bedel ? x.bedel / x.m2 : 0;
-  const baslik = (icra ? `${x.il} ${x.ilce} ${x.mahalle || ""} ${x.ada ? x.ada + "/" + x.parsel : ""} ${nf(x.m2)} m² ${(x.cins || "taşınmaz").toLocaleLowerCase("tr")} icradan satılık` : `${x.il} ${x.ilce} ${x.mahalle || ""} ${x.ada}/${x.parsel} ${x.cins || "taşınmaz"} ${TIP[x.tip]?.toLocaleLowerCase("tr")} ihalesi`).replace(/\s+/g, " ");
+  if (ek?.metin) {
+    dg = dogrulanmis(ek.metin);
+    const ilk = x.dogrulandi;
+    Object.assign(x, dg.alan);
+    if (x.bitis >= bugun()) x.aktif = 1;
+    if (ilk !== 1) { const p = dogrulamaYaz(env, id, dg.alan).catch(() => {}); ctx.exec?.waitUntil ? ctx.exec.waitUntil(p) : await p; }
+  }
+  const as = asama(x, bugun());
+  const gecti = !x.aktif || as.kod === "bitti";
+  const h = hisseli(x), sm = satilanM2(x);
+  const birim = sm && x.bedel && x.tip !== "kira" ? x.bedel / sm : 0;
+  let tk = null; try { tk = JSON.parse(x.takvim || "null"); } catch {}
+  const mahAd = x.mahalle ? String(x.mahalle).toLocaleLowerCase("tr").replace(/(^|\s)\S/g, (c) => c.toLocaleUpperCase("tr")) : "";
+  const baslik = (icra ? `${x.il} ${x.ilce} ${mahAd} ${x.ada ? x.ada + "/" + x.parsel : ""} ${x.m2 ? (h ? nf(sm) + " m² hisseli" : nf(x.m2) + " m²") : ""} ${(x.cins || "taşınmaz").toLocaleLowerCase("tr")} icradan satılık` : `${x.il} ${x.ilce} ${x.mahalle || ""} ${x.ada}/${x.parsel} ${x.cins || "taşınmaz"} ${TIP[x.tip]?.toLocaleLowerCase("tr")} ihalesi`).replace(/\s+/g, " ");
   const benzer = (await env.DB.prepare(`SELECT * FROM ihale WHERE ${AKTIF} AND il_slug = ?2 AND id != ?3 ORDER BY tarih LIMIT 6`).bind(bugun(), x.il_slug, id).all()).results || [];
   const urunler = (IL_URUN?.(x.il_slug) || []).filter((u) => u.durum === "yaygin").slice(0, 10);
   const satir = (a, b) => (b ? `<tr><th>${a}</th><td>${b}</td></tr>` : "");
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/ihaleler">İhaleler</a> › <a href="/ihaleler/${esc(x.il_slug)}">${esc(x.il)}</a> › <a href="/ihaleler/${esc(x.il_slug)}/${esc(x.ilce_slug)}">${esc(x.ilce)}</a> › ${esc(x.ada)}/${esc(x.parsel)}</div>
 <div class="layout"><article><h1>${esc(baslik.charAt(0).toUpperCase() + baslik.slice(1))}</h1>
-${gecti ? `<p class="note"><b>Bu ihalenin tarihi geçti veya ilan yayından kalktı.</b> Güncel ilanlar için <a href="/ihaleler/${esc(x.il_slug)}">${esc(x.il)} ihalelerine</a> bakın.</p>` : `<p class="answer">${esc(x.il)} ${esc(x.ilce)} ${esc(x.mahalle || "")} mahallesindeki ${nf(x.m2)} m² ${esc((x.cins || "taşınmaz").toLocaleLowerCase("tr"))}, ${esc(trTarih(x.tarih))} tarihinde ${x.bedel ? tl(x.bedel) + (x.tip === "kira" ? " yıllık kira" : " muhammen bedelle") : ""} ihaleye çıkıyor (${esc(kalan(x.tarih || ""))}).</p>`}
+${gecti ? `<p class="note"><b>Bu ihalenin tarihi geçti veya ilan yayından kalktı.</b> Güncel ilanlar için <a href="/ihaleler/${esc(x.il_slug)}">${esc(x.il)} ihalelerine</a> bakın.</p>` : `<p class="answer"><b>${esc([x.il, x.ilce, mahAd].filter(Boolean).join(" / "))}:</b> ${h ? `${nf(x.m2)} m² ${esc((x.cins || "taşınmaz").toLocaleLowerCase("tr"))} içindeki ${nf(sm)} m²'lik hisse` : `${x.m2 ? nf(x.m2) + " m² " : ""}${esc((x.cins || "taşınmaz").toLocaleLowerCase("tr"))}`} ${x.kaynak === "milliemlak" ? (x.tip === "kira" ? "hazine kiralama ihalesine çıkıyor" : "hazine satış ihalesine çıkıyor") : "icradan satılıyor"}.${x.bedel ? ` ${x.tip === "kira" ? "Yıllık kira bedeli" : "Muhammen bedel"} ${tl(x.bedel)}.` : ""} ${esc(as.metin)}.</p>${h ? `<p class="note"><b>Dikkat, hisseli satış:</b> Satılan, taşınmazın tamamı değil ${esc(x.hisse)} oranındaki hissedir (yaklaşık ${nf(sm)} m²). Hisseli taşınmazda kullanım, bölme ve satış için diğer hissedarlarla anlaşmak gerekir. Ayrıntılar için <a href="/rehber/hisseli-tapu-nedir">hisseli tapu rehberine</a> bakın.</p>` : ""}`}
 <table><tbody>
 ${satir("İlan türü", esc(`${KAYNAK[x.kaynak]?.tur || ""} ${TIP[x.tip] || ""}`))}
 ${satir("Satış türü", esc(SATIS_TURU[x.satis_turu] || ""))}
 ${satir("Konum", esc(`${x.il} / ${x.ilce} / ${x.mahalle || ""}`))}
 ${satir("Ada / parsel", esc(`${x.ada} / ${x.parsel}`))}
 ${satir("Cinsi", esc(x.cins))}
-${satir("Yüzölçümü", `${nf(x.m2)} m²${dekar(x.m2)}`)}
+${satir(h ? "Toplam yüzölçümü" : "Yüzölçümü", x.m2 ? `${nf(x.m2)} m²${dekar(x.m2)}` : "")}
+${h ? satir("Satılan hisse", `${esc(x.hisse)} · ${nf(sm)} m²`) : ""}
 ${satir(x.tip === "kira" ? "Yıllık kira bedeli" : "Muhammen (tahmini) bedel", x.bedel ? tl(x.bedel) : "")}
-${satir("m² fiyatı", birim ? nf(birim) + " TL" : "")}
+${satir(h ? "Hissenin m² fiyatı" : "m² fiyatı", birim ? nf(birim) + " TL" : "")}
+${satir("KDV", x.kdv != null ? (x.kdv ? `%${x.kdv}` : "Yok") : "")}
 ${satir("Geçici teminat", x.teminat ? tl(x.teminat) : "")}
-${satir(icra ? "1. satış günü" : "İhale tarihi", esc(trTarih(x.tarih)))}
+${tk ? `${satir("1. artırma", tk.a1 ? esc(aralik(tk.a1)) + " · " + esc(tk.a1.bas.slice(11, 16)) : "")}${satir("2. artırma", tk.a2 ? esc(aralik(tk.a2)) + " · " + esc(tk.a2.bas.slice(11, 16)) : "")}` : satir(icra ? "1. satış günü" : "İhale tarihi", esc(trTarih(x.tarih)))}
+${satir("Şu anki durum", `<b>${esc(as.metin)}</b>`)}
 ${satir("Nitelik", esc(x.nitelik))}
 ${satir("Dosya no", esc(x.dosya))}
 ${satir(icra ? "Satışı yapan" : "İhalenin yapılacağı yer", esc(x.yer))}
@@ -234,7 +274,7 @@ export async function ihaleAnaSayfa(env) {
     return { rows, sayi: n.reduce((o, r) => { const k = ICRA(r.kaynak) ? "icra" : r.tip; o[k] = (o[k] || 0) + r.n; return o; }, {}) };
   } catch (e) { return { rows: [], sayi: {} }; }
 }
-export const anaKart = (x, esc) => `<a class="tk-item" href="/ihaleler/ilan/${esc(x.id)}" style="text-decoration:none"><span class="tk-cat">Hazine ${esc(TIP[x.tip])} · ${esc(kalan(x.tarih || ""))}</span><span style="font-weight:800;color:var(--ink,#26261E)">${esc(x.cins)} · ${nf(x.m2)} m²${dekar(x.m2)}</span><span style="color:var(--muted,#6C6858);font-size:14px">${esc(x.il)} / ${esc(x.ilce)} · ${esc(x.mahalle || "")}</span><span style="font-weight:800;color:var(--green,#2E5130);font-size:18px">${x.bedel ? tl(x.bedel) : ""}</span><span class="tk-meta">İhale ${esc(trTarih(x.tarih))}</span></a>`;
+export const anaKart = (x, esc) => { const h = hisseli(x), sm = satilanM2(x); return `<a class="tk-item" href="/ihaleler/ilan/${esc(x.id)}" style="text-decoration:none"><span class="tk-cat">${esc(turEtiket(x))}${h ? " · Hisseli" : ""}</span><span style="font-weight:800;color:var(--ink,#26261E)">${esc(x.cins || "Taşınmaz")}${x.m2 ? ` · ${nf(sm)} m²${h ? " hisse" : dekar(sm)}` : ""}</span><span style="color:var(--muted,#6C6858);font-size:14px">${esc(x.il)} / ${esc(x.ilce)}</span><span style="font-weight:800;color:var(--green,#2E5130);font-size:18px">${x.bedel ? tl(x.bedel) : ""}</span><span class="tk-meta">${esc(asama(x, bugun()).metin)}</span></a>`; };
 
 export async function ihaleSitemap(env) {
   try {

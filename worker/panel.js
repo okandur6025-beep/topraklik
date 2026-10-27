@@ -184,6 +184,7 @@ const AJANLAR = [
   ["haber", "Haber editörü (yapay zekâ)", "Her habere özet, öne çıkan bilgiler ve \"neden önemli\" yazar; ilgisizleri eler.", "4 dakikada bir"],
   ["uyap", "UYAP e-Satış tarayıcı", "İcradan satılık tüm taşınmazları ilan.gov.tr'den okur.", "2 dakikada bir"],
   ["bik", "BİK icra ilanları", "Basın İlan Kurumu tarla ve arsa icra ilanlarını tarar, kalkanları kapatır.", "Her gece 04:00–04:40"],
+  ["bik-dogrula", "İlan doğrulayıcı", "BİK ilanlarının tam metnini okuyup bedel, alan, hisse, KDV ve artırma tarihlerini doğrular.", "2 dakikada bir"],
   ["fiyat", "Fiyat toplayıcı", "TOBB borsaları ve İzmir hali fiyatlarını günceller.", "Her sabah 07:01"],
   ["geo", "Mahalle listesi", "TKGM'den il, ilçe, mahalle listesini tamamlar.", "10 dakikada bir"],
 ];
