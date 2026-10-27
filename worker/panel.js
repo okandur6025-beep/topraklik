@@ -100,7 +100,7 @@ async function ozet(env) {
     q(env, "SELECT kaynak, count(*) n FROM ihale WHERE aktif = 1 AND bitis >= ?1 GROUP BY kaynak", bugun),
     bir(env, "SELECT count(*) t, sum(CASE WHEN ozet IS NOT NULL AND alakali = 1 THEN 1 ELSE 0 END) o FROM news WHERE published_at >= ?1", new Date(Date.now() - 864e5).toISOString()),
     bir(env, "SELECT v FROM durum WHERE k = 'uyap'"),
-    bir(env, "SELECT count(*) n FROM runs WHERE at >= ?1", new Date(Date.now() - 864e5).toISOString()),
+    bir(env, "SELECT count(*) n FROM runs WHERE at >= ?1 AND (job != 'news' OR log LIKE '%hata%' OR log LIKE '%HTTP 5%' OR log LIKE '%rror%')", new Date(Date.now() - 864e5).toISOString()),
     bir(env, "SELECT count(*) n FROM ihale WHERE ilk_gorulme >= ?1", new Date(Date.now() - 864e5).toISOString()),
   ]);
   const gunler = Array.from({ length: 30 }, (_, i) => gunTR(29 - i));
@@ -191,7 +191,7 @@ const AJANLAR = [
 async function ajanlar(env) {
   const [durum, hatalar, me, taslak] = await Promise.all([
     q(env, "SELECT k, v FROM durum"),
-    q(env, "SELECT at, job, log FROM runs ORDER BY id DESC LIMIT 20"),
+    q(env, "SELECT at, job, log FROM runs WHERE (job != 'news' OR log LIKE '%hata%' OR log LIKE '%HTTP 5%' OR log LIKE '%rror%') ORDER BY id DESC LIMIT 20"),
     bir(env, "SELECT max(guncel) son, count(*) n FROM ihale WHERE kaynak = 'milliemlak' AND aktif = 1"),
     bir(env, "SELECT count(*) n, max(updated_at) son FROM pages WHERE status = 'draft'"),
   ]);
@@ -210,7 +210,7 @@ async function ajanlar(env) {
 <tr><td><b>Milli Emlak toplayıcı</b><small>Hazine satış ve kira ihalelerini senin bilgisayarındaki tarayıcıdan toplar (site yalnızca Türkiye IP'sinden açılıyor).</small></td><td>Her gün 06:13</td><td>${me.son ? gecen(me.son) : "—"}<small>${nf(me.n)} aktif hazine ilanı</small></td></tr>
 <tr><td><b>Haftalık hibe ajanı</b><small>Yeni hibe ve destek programlarını araştırır, taslak hazırlar; yayınlamaz.</small></td><td>Pazartesi 08:41</td><td>${taslak.son ? gecen(taslak.son) : "—"}<small>${nf(taslak.n)} taslak bekliyor</small></td></tr>
 </tbody></table></div><p class="pn-not">Bu ajanlar Claude'da zamanlanmış görev olarak çalışır; ayrıntılı kayıtlar Claude uygulamasındaki görev geçmişindedir.</p>`)
-    + bolum("Son hatalar ve kayıtlar", hatalar.length ? `<div class="pn-tablo"><table><thead><tr><th>Zaman</th><th>İş</th><th>Kayıt</th></tr></thead><tbody>${hatalar.map((h) => `<tr><td>${gecen(h.at)}</td><td>${h.job}</td><td><code>${String(h.log || "").replace(/</g, "&lt;").slice(0, 300)}</code></td></tr>`).join("")}</tbody></table></div>` : `<p class="pn-bos">Kayıt yok.</p>`);
+    + bolum("Son hatalar", hatalar.length ? `<div class="pn-tablo"><table><thead><tr><th>Zaman</th><th>İş</th><th>Kayıt</th></tr></thead><tbody>${hatalar.map((h) => `<tr><td>${gecen(h.at)}</td><td>${h.job}</td><td><code>${String(h.log || "").replace(/</g, "&lt;").slice(0, 300)}</code></td></tr>`).join("")}</tbody></table></div>` : `<p class="pn-bos">Kayıt yok.</p>`);
 }
 
 async function plan(env) {
