@@ -1,0 +1,21 @@
+name = "topraklik-web"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+routes = [{ pattern = "topraklik.com/*", zone_name = "topraklik.com" }]
+
+[triggers]
+crons = ["* * * * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "topraklik"
+database_id = "7ae9d85c-2888-4b2a-a70e-b73b8c0deeb1"
+
+[vars]
+TICKER_AUTO = "0"
+
+[observability]
+enabled = true
+
+# ADMIN_KEY gizli anahtardır; burada DEĞİL, Cloudflare'de "secret" olarak durur.
