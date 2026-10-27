@@ -25,11 +25,12 @@ import { SATIS_TURU_SQL } from "./ihale.js";
 import { ziyaretKaydet, olayKaydet, sayfaMi, OLAY_JS } from "./analiz.js";
 import { panel } from "./panel.js";
 import { anaSayfa } from "./anasayfa.js";
-import { ilceVeri, emsalTablo, ilceOzet, ilceSss } from "./ilceseo.js";
+import { ilceVeri, emsalTablo, ilceOzet, ilceSss, ilVeri, ilOzet, ilceTarlaTablo, ilUretimHtml, ilSss } from "./ilceseo.js";
+const nf = (n) => Math.round(Number(n) || 0).toLocaleString("tr-TR");
 import { kart as ihaleKarti } from "./ihale.js";
 import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
 import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS, tekrarAyikla, benzerMi } from "./haber.js";
-import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
+import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS, takvimSayfa } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
 const UA = "Mozilla/5.0 (compatible; TopraklikBot/1.0; +https://topraklik.com)";
@@ -390,23 +391,38 @@ async function ilIndex(env) {
 async function ilPage(env, slug) {
   const il = await env.DB.prepare("SELECT * FROM geo_il WHERE slug = ?1").bind(slug).first();
   if (!il) return null;
-  const ilces = ((await env.DB.prepare("SELECT ad, slug, mah_count FROM geo_ilce WHERE il_id = ?1").bind(il.id).all()).results || []).sort(trSort);
-  const c = await env.DB.prepare("SELECT * FROM pages WHERE section = 'il' AND slug = ?1 AND status = 'published'").bind(slug).first();
+  const [ilcesR, c, news, v, urunler] = await Promise.all([
+    env.DB.prepare("SELECT ad, slug, mah_count FROM geo_ilce WHERE il_id = ?1").bind(il.id).all(),
+    env.DB.prepare("SELECT * FROM pages WHERE section = 'il' AND slug = ?1 AND status = 'published'").bind(slug).first(),
+    newsAbout(env, [il.ad]),
+    ilVeri(env, slug),
+    ilUrunleri(env, slug),
+  ]);
+  const ilces = (ilcesR.results || []).sort(trSort);
+  const ihaleSay = Object.fromEntries(v.ilceler.map((d) => [d.ilce_slug, d.n]));
   const mahTotal = ilces.reduce((s, x) => s + (x.mah_count || 0), 0);
-  const news = await newsAbout(env, [il.ad]);
-  const faq = c ? JSON.parse(c.faq_json || "[]") : [], sources = c ? JSON.parse(c.sources_json || "[]") : [];
+  const faq = [...(c ? JSON.parse(c.faq_json || "[]").map((f) => [f.q, f.a]) : []), ...ilSss(v, il.ad)];
+  const sources = c ? JSON.parse(c.sources_json || "[]") : [];
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/il">İller</a> › ${esc(il.ad)}</div>
-<div class="layout"><article><h1>${esc(c?.h1 || `${il.ad} tarım, arazi ve ihale rehberi`)}</h1>${c?.answer ? `<p class="answer">${esc(c.answer)}</p>` : ""}
-<p class="note">${esc(il.ad)}: ${ilces.length || "?"} ilçe${mahTotal ? `, ${mahTotal.toLocaleString("tr-TR")} mahalle ve köy` : ""}. ${il.lat ? `<a href="${mapLink(il.lat, il.lng, 9)}" target="_blank" rel="noopener">Haritada gör</a>` : ""}</p>
-${c ? c.body_html : `<p>${esc(il.ad)} için iklim, başlıca ürünler ve ne ekilir bilgileri hazırlanıyor. Bu sırada ilçe ve mahalle listesine, arazi ihalelerine ve haberlere aşağıdan ulaşabilirsiniz.</p>`}
-${urunListHtml(await ilUrunleri(env, slug), `${il.ad} ilinde yetişen ürünler`)}
-<h2>${esc(il.ad)} ilçeleri</h2>${ilces.length ? `<div class="grid">${ilces.map((x) => `<a class="card" href="/il/${slug}/${x.slug}"><b>${esc(x.ad)}</b><span>${x.mah_count != null ? x.mah_count + " mahalle / köy" : "mahalleler yükleniyor"}</span></a>`).join("")}</div>` : `<p>İlçeler yükleniyor.</p>`}
-${faq.length ? `<h2>Sık sorulan sorular</h2>${faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}` : ""}
-<div class="src">İdari bölünme: Tapu ve Kadastro Genel Müdürlüğü${sources.length ? " · Kaynaklar: " + sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(", ") : ""}</div></article>
-<aside>${await ihaleKutusu(env, { il: slug }, esc)}<h3>Rehberler</h3><a class="card" href="/rehber/icra-ihalesine-nasil-girilir"><b>İcra ihalesine nasıl girilir?</b></a><a class="card" href="/rehber/tarla-alirken-dikkat-edilecekler"><b>Tarla alırken dikkat edilecekler</b></a><a class="card" href="/hibe"><b>Hibe ve destekler</b></a><h3>${esc(il.ad)} haberleri</h3>${newsList(news)}</aside></div>`;
-  const jsonld = [{ "@context": "https://schema.org", "@type": "Place", name: il.ad, address: { "@type": "PostalAddress", addressRegion: il.ad, addressCountry: "TR" }, ...(il.lat ? { geo: { "@type": "GeoCoordinates", latitude: il.lat, longitude: il.lng } } : {}) }];
-  if (faq.length) jsonld.push({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) });
-  return html(page({ title: c?.title ? `${c.title} · Topraklık` : `${il.ad} ilçeleri, tarım ve arazi ihaleleri · Topraklık`, description: c?.description || `${il.ad} ilinin ${ilces.length} ilçesi ve mahalleleri, tarım bilgileri, ne ekilir, tarla ve arsa ihaleleri, ${il.ad} tarım haberleri.`, path: `/il/${slug}`, body, current: "/il", jsonld }), 200, 900);
+<div class="layout"><article><h1>${esc(c?.h1 || `${il.ad}: icradan satılık tarla ve arsalar, arazi değerleri, ne ekilir`)}</h1>
+${ilOzet(v, il.ad, esc)}${c?.answer ? `<p>${esc(c.answer)}</p>` : ""}
+<p class="ih-dugmeler"><a class="btn dolu" href="/ihaleler/${slug}">${esc(il.ad)} ihaleleri${v.sayi.toplam ? ` (${nf(v.sayi.toplam)})` : ""}</a> <a class="btn ih-3b" href="/parsel-sorgu?il=${slug}">${esc(il.ad)} ilinde parsel sorgula</a></p>
+${v.ihaleler.length ? `<h2>${esc(il.ad)} ilindeki güncel ihaleler</h2><div class="ilist">${v.ihaleler.map((x) => ihaleKarti(x, esc)).join("")}</div>${v.sayi.toplam > v.ihaleler.length ? `<p><a href="/ihaleler/${slug}">Tüm ${esc(il.ad)} ihalelerini gör (${nf(v.sayi.toplam)}) →</a></p>` : ""}` : ""}
+${emsalTablo(v, il.ad, il.ad, esc, true)}
+${ilceTarlaTablo(v, il.ad, slug, esc)}
+${c ? c.body_html : ""}
+${ilUretimHtml(v, il.ad, esc)}
+${urunListHtml(urunler, `${il.ad} ilinde yetişen ürünler`)}
+<h2>${esc(il.ad)} ilçeleri</h2><p>${esc(il.ad)} ilinde ${ilces.length || "?"} ilçe${mahTotal ? ` ve ${mahTotal.toLocaleString("tr-TR")} mahalle ve köy` : ""} var. Her ilçe sayfasında arazi değerleri, ekilen ürünler, mahalleler ve güncel ihaleler yer alır.${il.lat ? ` <a href="${mapLink(il.lat, il.lng, 9)}" target="_blank" rel="noopener">Haritada gör</a>` : ""}</p>
+${ilces.length ? `<div class="grid">${ilces.map((x) => `<a class="card" href="/il/${slug}/${x.slug}"><b>${esc(x.ad)}</b><span>${[x.mah_count != null ? x.mah_count + " mahalle / köy" : "", ihaleSay[x.slug] ? ihaleSay[x.slug] + " ihale" : ""].filter(Boolean).join(" · ") || "ilçe sayfası"}</span></a>`).join("")}</div>` : `<p>İlçeler yükleniyor.</p>`}
+<h2>Sık sorulan sorular</h2>${faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}
+<div class="src">Kaynaklar: idari bölünme TKGM; ihaleler UYAP e-Satış, ilan.gov.tr ve Milli Emlak; üretim TÜİK${sources.length ? "; " + sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(", ") : ""}. Sayfa her gün güncellenir.</div></article>
+<aside><h3>Rehberler</h3><a class="card" href="/rehber/icra-ihalesine-nasil-girilir"><b>İcra ihalesine nasıl girilir?</b></a><a class="card" href="/rehber/tarla-alirken-dikkat-edilecekler"><b>Tarla alırken dikkat edilecekler</b></a><a class="card" href="/rehber/hisseli-tapu-nedir"><b>Hisseli tapu nedir?</b></a><a class="card" href="/hibe"><b>Hibe ve destekler</b></a><a class="card" href="/ihaleler/bu-hafta"><b>Bu hafta sonuçlanacak ihaleler</b></a><h3>${esc(il.ad)} haberleri</h3>${newsList(news)}</aside></div>`;
+  const jsonld = [{ "@context": "https://schema.org", "@type": "Place", name: il.ad, address: { "@type": "PostalAddress", addressRegion: il.ad, addressCountry: "TR" }, ...(il.lat ? { geo: { "@type": "GeoCoordinates", latitude: il.lat, longitude: il.lng } } : {}) },
+    { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
+  const t = v.emsal.find((e) => e.cins === "Tarla");
+  const desc = `${il.ad}: ${v.sayi.toplam ? `${nf(v.sayi.toplam)} güncel icra ve hazine arazi ihalesi` : "icra ve hazine arazi ihaleleri"}${t ? `, tarla m² değeri ortanca ${nf(t.med)} TL` : ""}, ilçelere göre arazi değerleri, ne ekilir (TÜİK), ${ilces.length} ilçe ve 3B parsel sorgu.`;
+  return html(page({ title: c?.title ? `${c.title} · Topraklık` : `${il.ad} icradan satılık tarla, arsa ve arazi değerleri · Topraklık`, description: c?.description || desc, path: `/il/${slug}`, body, current: "/il", jsonld }), 200, 1800);
 }
 async function ilcePage(env, ilSlug, ilceSlug) {
   const il = await env.DB.prepare("SELECT * FROM geo_il WHERE slug = ?1").bind(ilSlug).first();
@@ -631,6 +647,8 @@ export default {
       if (ih) {
         const ctx = { esc, page, html, IL_URUN: urunleriIl, bikDetay, exec: ctxExec };
         if (ih[1] === "ilan" && ih[2]) { const r = await ihaleDetay(env, ih[2], ctx); if (r) return r; }
+        else if (ih[1] === "bu-hafta" && !ih[2]) return takvimSayfa(env, url, ctx, "hafta");
+        else if (ih[1] === "takvim") { const r = await takvimSayfa(env, url, ctx, ih[2] ? "ay" : "ana", ih[2]); if (r) return r; }
         else return ihaleListe(env, url, ctx, ih[1] ? { il: ih[1], ...(ih[2] ? { ilce: ih[2] } : {}) } : {});
       }
       const g = path.match(/^\/il(?:\/([a-z0-9-]+))?(?:\/([a-z0-9-]+))?$/);

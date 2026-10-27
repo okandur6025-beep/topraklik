@@ -2,6 +2,7 @@
    Veri, Türkiye IP'si gerektirdiği için kullanıcının bilgisayarındaki tarayıcıdan toplanır
    ve /admin/ihale-yukle ucuna gönderilir. */
 
+import { listeEk } from "./ilceseo.js";
 import { metinCoz, asama, aralik, gunAy } from "./ilanmetin.js";
 
 export const IHALE_SCHEMA = [
@@ -146,6 +147,7 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
     const ord = { tarih: "tarih ASC", ucuz: "bedel ASC", buyuk: "m2 DESC", m2fiyat: "bedel / m2 ASC", yeni: "ilk_gorulme DESC" }[f.sira] || "tarih ASC";
     rows = (await env.DB.prepare(`SELECT * FROM ihale WHERE ${w.join(" AND ")} ORDER BY ${ord} LIMIT ${N + 1} OFFSET ${(sayfa - 1) * N}`).bind(...b).all()).results || [];
   } catch (e) { var dbHata = true; }
+  const dbHataVar = () => typeof dbHata !== "undefined";
   const more = rows.length > N; rows = rows.slice(0, N);
   const ils = {}, ilces = {}, cinsler = {};
   let topS = 0, topK = 0, topI = 0;
@@ -175,6 +177,9 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
   const baslikSeo = ts ? `${h1} (${ayYil})` : yer ? `${yer} icradan satılık ${neler} (${ayYil})` : `İcradan satılık ${neler} (${ayYil})`;
   const pathBase = sabit.il ? `/ihaleler/${sabit.il}${sabit.ilce ? "/" + sabit.ilce : ""}` : "/ihaleler";
   const qs = (p) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(f)) if (v && !sabit[k] && !(k === "sira" && v === "tarih")) u.set(k, v); if (p > 1) u.set("sayfa", p); const s = u.toString(); return pathBase + (s ? "?" + s : ""); };
+  const sade = sayfa === 1 && !f.tur && !f.kaynak && !f.tip && !f.cins && !f.max && !f.min_m2 && f.sira === "tarih";
+  let ek = null;
+  if (sade && f.il && ilAd && !dbHataVar()) { try { ek = await listeEk(env, f, ilAd, ilceAd || "", esc); } catch (e) {} }
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/ihaleler">İhaleler</a>${ilAd ? ` › <a href="/ihaleler/${esc(f.il)}">${esc(ilAd)}</a>` : ""}${ilceAd ? ` › ${esc(ilceAd)}` : ""}</div>
 <h1>${esc(h1)}</h1>
 <p class="lead">İcra ve mahkeme satışlarındaki tarla, arsa, ev ve işyerleri (UYAP e-Satış ve ilan.gov.tr) ile Milli Emlak'ın hazine satış ve kiralama ihaleleri her gün güncellenir. Bedel, alan, hisse, KDV ve artırma tarihleri ilanın tam metninden okunur. Her ilan kaynağına bağlıdır; teklif vermeden önce ilanın aslını ve şartnamesini mutlaka kontrol edin.</p>
@@ -183,9 +188,12 @@ ${ilceAd ? `<p><a href="/il/${esc(f.il)}/${esc(f.ilce)}">${esc(ilceAd)} hakkınd
 ${form}
 ${rows.length ? `<div class="ilist">${rows.map((x) => kart(x, esc)).join("")}</div>` : `<p class="note">${opts.length ? "Bu filtreye uygun güncel ilan yok. Filtreleri genişletin." : "İlanlar ilk kez yükleniyor; kısa süre içinde burada olacak."}</p>`}
 <div class="sayfa">${sayfa > 1 ? `<a class="btn" href="${esc(qs(sayfa - 1))}">← Önceki</a>` : ""}${more ? `<a class="btn" href="${esc(qs(sayfa + 1))}">Sonraki →</a>` : ""}</div>
+${ek ? ek.html : ""}
+<p class="chips"><b>İhale takvimi:</b> <a class="tag" href="/ihaleler/bu-hafta">Bu hafta sonuçlananlar</a> ${takvimAylari().map(([k, ad]) => `<a class="tag" href="/ihaleler/takvim/${k}">${ad}</a>`).join(" ")}</p>
 <p class="note">İcra ihaleleri UYAP e-Satış üzerinden e-Devlet ile girilerek yapılır. Katılmayı öğrenmek için <a href="/rehber/icra-ihalesine-nasil-girilir">icra ihalesi rehberine</a>, hazine arazisi almak için <a href="/rehber/hazine-arazisi-nasil-alinir">hazine arazisi rehberine</a> bakın.</p>`;
   const desc = yer ? `${yer} icradan satılık ${neler} ile Milli Emlak hazine arazi satış ve kiralama ihaleleri: muhammen bedel, satış tarihi, ada parsel.` : "Türkiye genelinde icradan ve mahkemeden satılık tarla, arsa, ev ve işyerleri ile hazine (Milli Emlak) arazi satış ve kiralama ihaleleri; il ve ilçeye göre arama.";
-  return html(page({ title: `${baslikSeo} · Topraklık`, description: desc, path: pathBase, body, current: "/ihaleler" }), 200, 900, typeof dbHata !== "undefined");
+  const jsonld = ek?.sss?.length ? { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: ek.sss.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) } : null;
+  return html(page({ title: `${baslikSeo} · Topraklık`, description: desc, path: pathBase, body, current: "/ihaleler", jsonld }), 200, 900, dbHataVar());
 }
 
 const sl = (t) => String(t || "").replace(/İ/g, "i").replace(/I/g, "ı").toLocaleLowerCase("tr").replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -198,6 +206,8 @@ export async function ihaleDetay(env, id, ctx) {
   let x = null;
   try { x = await env.DB.prepare("SELECT * FROM ihale WHERE id = ?1").bind(id).first(); } catch (e) {}
   if (!x) return null;
+  /* bitişinden 30 günden fazla geçmiş ilan: kalıcı olarak ilçenin ihale listesine yönlendir */
+  if (x.bitis && x.bitis.slice(0, 10) < gunEkle(bugun(), -30) && x.il_slug) return new Response(null, { status: 301, headers: { location: `https://topraklik.com/ihaleler/${x.il_slug}${x.ilce_slug ? "/" + x.ilce_slug : ""}`, "cache-control": "public, max-age=86400" } });
   const icra = ICRA(x.kaynak);
   let ek = null, dg = null;
   if (icra && ctx.bikDetay) { try { ek = await ctx.bikDetay(x.ilan_id, ctx.exec); } catch (e) {} }
@@ -283,8 +293,100 @@ export async function ihaleSitemap(env) {
   try {
     const ils = (await env.DB.prepare(`SELECT DISTINCT il_slug, ilce_slug FROM ihale WHERE ${AKTIF}`).bind(bugun()).all()).results || [];
     const ids = (await env.DB.prepare(`SELECT id FROM ihale WHERE ${AKTIF}`).bind(bugun()).all()).results || [];
-    const out = new Set(["/ihaleler"]);
+    const out = new Set(["/ihaleler", "/ihaleler/takvim", "/ihaleler/bu-hafta", ...takvimAylari(3).map(([k]) => `/ihaleler/takvim/${k}`)]);
     for (const r of ils) { out.add(`/ihaleler/${r.il_slug}`); out.add(`/ihaleler/${r.il_slug}/${r.ilce_slug}`); }
     return [...out, ...ids.map((r) => `/ihaleler/ilan/${r.id}`)];
   } catch (e) { return ["/ihaleler"]; }
+}
+
+/* ---------- İhale takvimi: bu hafta ve aylık sayfalar ---------- */
+const AYLAR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+const GUNLER = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+function gunEkle(d, n) { const t = new Date(d.slice(0, 10) + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+const gunYaz = (d) => `${+d.slice(8, 10)} ${AYLAR[+d.slice(5, 7) - 1]}`;
+const haftaGunu = (d) => GUNLER[new Date(d + "T12:00:00Z").getUTCDay()];
+export function takvimAylari(n = 3) {
+  const [y, m] = bugun().split("-").map(Number);
+  return Array.from({ length: n }, (_, i) => { const yy = y + Math.floor((m - 1 + i) / 12), mm = ((m - 1 + i) % 12) + 1; return [`${yy}-${String(mm).padStart(2, "0")}`, `${AYLAR[mm - 1]} ${yy}`]; });
+}
+/* bir ilanın "sonuç günleri": e-satışta artırmaların son günleri, diğerlerinde ihale tarihi */
+const G1 = "(CASE WHEN json_valid(takvim) AND json_extract(takvim, '$.a1.bit') IS NOT NULL THEN substr(json_extract(takvim, '$.a1.bit'), 1, 10) ELSE substr(tarih, 1, 10) END)";
+const G2 = "(CASE WHEN json_valid(takvim) THEN substr(json_extract(takvim, '$.a2.bit'), 1, 10) END)";
+const ARALIKTA = "(g1 BETWEEN ?2 AND ?3 OR g2 BETWEEN ?2 AND ?3)";
+const GUN = "(CASE WHEN g1 BETWEEN ?2 AND ?3 THEN g1 ELSE g2 END)";
+const ALT = `(SELECT *, ${G1} g1, ${G2} g2 FROM ihale WHERE ${AKTIF})`;
+const TUR_F = { icra: "kaynak IN ('bik', 'uyap')", hazine: "kaynak = 'milliemlak'" };
+
+async function takvimVeri(env, bas, bit, f, sayfa, N) {
+  const w = [ARALIKTA], b = [bugun(), bas, bit];
+  if (TUR_F[f.tur]) w.push(TUR_F[f.tur]);
+  if (f.cins) { b.push(f.cins); w.push(`cins = ?${b.length}`); }
+  const [rows, ozet, iller] = await Promise.all([
+    env.DB.prepare(`SELECT *, ${GUN} gun FROM ${ALT} WHERE ${w.join(" AND ")} ORDER BY gun, il, ilce LIMIT ${N + 1} OFFSET ${(sayfa - 1) * N}`).bind(...b).all(),
+    env.DB.prepare(`SELECT cins, CASE WHEN kaynak = 'milliemlak' THEN 'hazine' ELSE 'icra' END tur, count(*) n FROM ${ALT} WHERE ${ARALIKTA} GROUP BY cins, tur`).bind(bugun(), bas, bit).all(),
+    env.DB.prepare(`SELECT il, il_slug, count(*) n FROM ${ALT} WHERE ${ARALIKTA} GROUP BY il_slug ORDER BY n DESC LIMIT 12`).bind(bugun(), bas, bit).all(),
+  ]);
+  return { rows: rows.results || [], ozet: ozet.results || [], iller: iller.results || [] };
+}
+
+function takvimGovde(d, ctx, { bas, bit, yol, f, sayfa, N, baslik, giris }) {
+  const { esc } = ctx;
+  const more = d.rows.length > N, rows = d.rows.slice(0, N);
+  const top = (fn) => d.ozet.filter(fn).reduce((s, r) => s + r.n, 0);
+  const toplam = top(() => true);
+  const qs = (o) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ ...f, ...o })) if (v && !(k === "sayfa" && v === 1)) u.set(k, v); const t = u.toString(); return yol + (t ? "?" + t : ""); };
+  const cinsler = [...new Set(d.ozet.map((r) => r.cins).filter(Boolean))].sort((a, b) => top((r) => r.cins === b) - top((r) => r.cins === a));
+  const gruplar = [];
+  for (const x of rows) { const g = x.gun || ""; if (!gruplar.length || gruplar.at(-1)[0] !== g) gruplar.push([g, []]); gruplar.at(-1)[1].push(x); }
+  const etiket = (x) => { let tk = null; try { tk = JSON.parse(x.takvim || "null"); } catch {} if (tk?.a2 && (tk.a2.bit || "").slice(0, 10) === x.gun) return "2. artırmanın son günü"; if (tk?.a1) return "1. artırmanın son günü"; return x.kaynak === "milliemlak" ? "ihale günü" : "satış günü"; };
+  return `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/ihaleler">İhaleler</a> › <a href="/ihaleler/takvim">İhale takvimi</a> › ${esc(baslik)}</div>
+<h1>${esc(giris.h1)}</h1>
+<p class="answer">${giris.cevap(toplam, top((r) => r.tur === "icra"), top((r) => r.tur === "hazine"), top((r) => r.cins === "Tarla"), top((r) => r.cins === "Arsa"), top((r) => r.cins === "Konut"))}</p>
+<div class="ozet"><span>Toplam <b>${nf(toplam)}</b></span><span>İcra / mahkeme <b>${nf(top((r) => r.tur === "icra"))}</b></span><span>Hazine <b>${nf(top((r) => r.tur === "hazine"))}</b></span></div>
+<p class="chips"><a class="tag"${!f.tur && !f.cins ? ' aria-current="page"' : ""} href="${yol}">Hepsi</a> <a class="tag" href="${esc(qs({ tur: "icra", sayfa: 1 }))}"${f.tur === "icra" ? ' aria-current="page"' : ""}>İcra ve mahkeme</a> <a class="tag" href="${esc(qs({ tur: "hazine", sayfa: 1 }))}"${f.tur === "hazine" ? ' aria-current="page"' : ""}>Hazine</a> ${cinsler.slice(0, 7).map((c) => `<a class="tag" href="${esc(qs({ cins: c, sayfa: 1 }))}"${f.cins === c ? ' aria-current="page"' : ""}>${esc(c)} · ${top((r) => r.cins === c)}</a>`).join(" ")}</p>
+${gruplar.length ? gruplar.map(([g, xs]) => `<h2 class="tk-gun">${g ? `${gunYaz(g)} ${haftaGunu(g)}` : "Tarihi belirsiz"}</h2><div class="ilist">${xs.map((x) => kart(x, esc).replace('<div class="alt">', `<p class="tk-etiket">${esc(etiket(x))}</p><div class="alt">`)).join("")}</div>`).join("") : `<p class="note">Bu aralıkta ${f.tur || f.cins ? "bu filtreye uygun " : ""}sonuçlanacak güncel ihale yok.</p>`}
+<div class="sayfa">${sayfa > 1 ? `<a class="btn" href="${esc(qs({ sayfa: sayfa - 1 }))}">← Önceki</a>` : ""}${more ? `<a class="btn" href="${esc(qs({ sayfa: sayfa + 1 }))}">Sonraki →</a>` : ""}</div>
+${d.iller.length ? `<h2>En çok ihale olan iller</h2><p class="chips">${d.iller.map((r) => `<a class="tag" href="/ihaleler/${esc(r.il_slug)}">${esc(r.il)} · ${r.n}</a>`).join(" ")}</p>` : ""}
+<h2>Diğer dönemler</h2><p class="chips"><a class="tag" href="/ihaleler/bu-hafta">Bu hafta</a> ${takvimAylari(4).map(([k, ad]) => `<a class="tag" href="/ihaleler/takvim/${k}">${ad}</a>`).join(" ")}</p>
+<p class="note">Tarihler ilan metninden okunur. UYAP e-Satış'ta her artırma birkaç gün sürer; burada artırmanın <b>son günü</b> esas alınmıştır. Birinci artırmada alıcı çıkmazsa ilan ikinci artırmanın son gününde yeniden listelenir. Teklif vermeden önce ilanın aslını mutlaka kontrol edin; nasıl katılınacağını <a href="/rehber/icra-ihalesine-nasil-girilir">icra ihalesi rehberinde</a> bulabilirsiniz.</p>`;
+}
+const TAKVIM_CSS = `.tk-gun{margin:26px 0 10px;font-size:20px;border-bottom:2px solid var(--line,#e5e0d5);padding-bottom:6px}.tk-etiket{margin:6px 0 0;font-size:12.5px;font-weight:700;color:#8a5a00}.chips .tag[aria-current]{background:#2E5130;color:#fff}`;
+
+export async function takvimSayfa(env, url, ctx, tip, ay) {
+  const { page, html } = ctx;
+  const f = { tur: TUR_F[url.searchParams.get("tur")] ? url.searchParams.get("tur") : "", cins: (url.searchParams.get("cins") || "").slice(0, 30) };
+  const sayfa = Math.max(1, parseInt(url.searchParams.get("sayfa") || "1", 10) || 1), N = 60;
+  const b = bugun();
+  if (tip === "hafta") {
+    const bas = b, bit = gunEkle(b, 6);
+    const d = await takvimVeri(env, bas, bit, f, sayfa, N);
+    const ar = `${gunYaz(bas)} – ${gunYaz(bit)}`;
+    const body = takvimGovde(d, ctx, { bas, bit, yol: "/ihaleler/bu-hafta", f, sayfa, N, baslik: "Bu hafta", giris: {
+      h1: `Bu hafta sonuçlanacak ihaleler (${ar})`,
+      cevap: (t, i, h, ta, ar2, k) => t ? `Önümüzdeki 7 günde (${ar}) son günü gelen <b>${nf(t)}</b> ihale var: ${nf(i)} icra ve mahkeme satışı, ${nf(h)} hazine ihalesi. Bunların ${[ta ? `${nf(ta)} tanesi tarla` : "", ar2 ? `${nf(ar2)} tanesi arsa` : "", k ? `${nf(k)} tanesi konut` : ""].filter(Boolean).join(", ") || "tamamı diğer taşınmazlar"}.` : `Önümüzdeki 7 günde (${ar}) son günü gelen ihale bulunmuyor.` } });
+    return html(page({ title: `Bu hafta sonuçlanacak icra ve hazine ihaleleri (${ar})`, description: `${ar} arasında son günü gelen icra, mahkeme ve hazine ihaleleri: tarla, arsa, ev ve işyeri; gün gün liste, bedel, alan ve artırma tarihleri.`, path: "/ihaleler/bu-hafta", body, current: "/ihaleler", ekCss: TAKVIM_CSS, noindex: sayfa > 1 || !!(f.tur || f.cins) }), 200, 1800);
+  }
+  if (tip === "ay") {
+    const gecerli = takvimAylari(6).map(([k]) => k);
+    if (!gecerli.includes(ay)) return null;
+    const [y, m] = ay.split("-").map(Number);
+    const bas = ay === b.slice(0, 7) ? b : `${ay}-01`, bit = `${ay}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
+    const ad = `${AYLAR[m - 1]} ${y}`;
+    const d = await takvimVeri(env, bas, bit, f, sayfa, N);
+    const body = takvimGovde(d, ctx, { bas, bit, yol: `/ihaleler/takvim/${ay}`, f, sayfa, N, baslik: ad, giris: {
+      h1: `${ad} icra ve hazine ihaleleri: tarla, arsa, ev, işyeri`,
+      cevap: (t, i, h, ta, ar2, k) => t ? `${ad} içinde${bas !== `${ay}-01` ? " bugünden itibaren" : ""} son günü gelen <b>${nf(t)}</b> ihale var: ${nf(i)} icra ve mahkeme satışı, ${nf(h)} hazine ihalesi${ta || ar2 || k ? ` (${[ta ? `${nf(ta)} tarla` : "", ar2 ? `${nf(ar2)} arsa` : "", k ? `${nf(k)} konut` : ""].filter(Boolean).join(", ")})` : ""}. Liste gün gün sıralanmıştır; yeni ilanlar eklendikçe güncellenir.` : `${ad} için henüz yayımlanmış ihale yok. İcra ilanları genellikle ihaleden 2–6 hafta önce yayımlanır; bu sayfa her gün güncellenir.` } });
+    return html(page({ title: `${ad} icra ve hazine ihaleleri: tarla, arsa, ev`, description: `${ad} ayında son günü gelen icradan ve hazineden satılık tarla, arsa, ev ve işyerleri; gün gün ihale takvimi, bedel ve alan bilgisi.`, path: `/ihaleler/takvim/${ay}`, body, current: "/ihaleler", ekCss: TAKVIM_CSS, noindex: sayfa > 1 || !!(f.tur || f.cins) }), 200, 1800);
+  }
+  /* takvim ana sayfası */
+  const donem = [["/ihaleler/bu-hafta", "Bu hafta", b, gunEkle(b, 6)], ["/ihaleler/bu-hafta", "Gelecek hafta", gunEkle(b, 7), gunEkle(b, 13)], ...takvimAylari(4).map(([k, ad]) => { const [y, m] = k.split("-").map(Number); return [`/ihaleler/takvim/${k}`, ad, k === b.slice(0, 7) ? b : `${k}-01`, `${k}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`]; })];
+  const sayi = await Promise.all(donem.map(([, , s, e]) => env.DB.prepare(`SELECT count(*) n FROM ${ALT} WHERE ${ARALIKTA}`).bind(b, s, e).first().then((r) => r?.n || 0).catch(() => 0)));
+  const gun14 = (await env.DB.prepare(`SELECT ${GUN} gun, count(*) n FROM ${ALT} WHERE ${ARALIKTA} GROUP BY gun ORDER BY gun`).bind(b, b, gunEkle(b, 13)).all().catch(() => ({ results: [] }))).results || [];
+  const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/ihaleler">İhaleler</a> › İhale takvimi</div>
+<h1>İhale takvimi: hangi gün hangi ihale sonuçlanıyor?</h1>
+<p class="answer">İcra, mahkeme ve hazine ihalelerini son günlerine göre izleyin. Bu hafta <b>${nf(sayi[0])}</b>, gelecek hafta <b>${nf(sayi[1])}</b> ihalenin son günü geliyor. UYAP e-Satış'ta artırmalar birkaç gün sürdüğü için artırmanın son günü esas alınır.</p>
+<div class="grid">${donem.filter((_, i) => i !== 1).map(([h, ad], i) => `<a class="card" href="${h}"><b>${ad}</b><span>${nf(sayi[i === 0 ? 0 : i + 1])} ihale</span></a>`).join("")}</div>
+${gun14.length ? `<h2>Önümüzdeki 14 gün</h2><div class="tablo-kap"><table><thead><tr><th>Gün</th><th>Son günü gelen ihale</th></tr></thead><tbody>${gun14.map((r) => `<tr><td>${gunYaz(r.gun)} ${haftaGunu(r.gun)}</td><td><b>${nf(r.n)}</b></td></tr>`).join("")}</tbody></table></div>` : ""}
+<p class="note">Takvim ilan metinlerinden otomatik çıkarılır ve her gün güncellenir. Kesin tarih ve saat için ilanın aslına bakın.</p>`;
+  return html(page({ title: "İhale takvimi: bu hafta ve bu ay sonuçlanacak icra ihaleleri", description: "İcra, mahkeme ve hazine ihalelerinin takvimi: bu hafta, gelecek hafta ve önümüzdeki aylarda son günü gelen tarla, arsa, ev ve işyeri ihaleleri.", path: "/ihaleler/takvim", body, current: "/ihaleler", ekCss: TAKVIM_CSS }), 200, 1800);
 }
