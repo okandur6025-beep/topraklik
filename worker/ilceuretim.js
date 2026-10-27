@@ -4,17 +4,17 @@ export const ILCE_SCHEMA = "CREATE TABLE IF NOT EXISTS ilce_uretim (il_slug TEXT
 
 /* TÜİK ürün adı → Topraklık ürün sayfası. Sıra önemli: ilk eşleşen kullanılır. */
 const ESLE = [
-  [/durum buğdayı/i, "makarnalik-bugday"], [/^buğday/i, "bugday"], [/^arpa/i, "arpa"], [/^çavdar/i, "cavdar"], [/^yulaf/i, "yulaf"],
-  [/tritikale/i, "tritikale"], [/mısır.*silaj/i, "silajlik-misir"], [/^mısır|mısır \(dane\)/i, "misir"], [/çeltik/i, "celtik"],
-  [/^darı|kuş yemi/i, "dari"], [/karabuğday/i, "karabugday"], [/sorgum/i, "sorgum"], [/kaplıca|siyez/i, "siyez-bugdayi"],
-  [/nohut/i, "nohut"], [/mercimek.*kırmızı/i, "kirmizi-mercimek"], [/mercimek.*yeşil/i, "yesil-mercimek"], [/fasulye.*kuru|kuru fasulye/i, "kuru-fasulye"],
-  [/bakla.*kuru|kuru bakla/i, "bakla"], [/börülce.*kuru/i, "borulce"], [/maş/i, "mas-fasulyesi"],
-  [/ayçiçeği.*çerez/i, "cerezlik-aycicegi"], [/ayçiçeği/i, "aycicegi"], [/kanola|kolza/i, "kanola"], [/soya/i, "soya"], [/yer ?fıstığı/i, "yerfistigi"],
-  [/susam/i, "susam"], [/aspir/i, "aspir"], [/keten/i, "keten"], [/pamuk|kütlü/i, "pamuk"], [/şeker pancarı/i, "seker-pancari"], [/tütün/i, "tutun"],
-  [/haşhaş/i, "hashas"], [/kenevir/i, "kenevir"], [/şerbetçi/i, "serbetciotu"], [/yonca/i, "yonca"], [/korunga/i, "korunga"], [/fiğ/i, "fig"],
-  [/sudan otu/i, "sudan-otu"], [/hayvan pancarı/i, "hayvan-pancari"], [/italyan çimi|çim/i, "italyan-cimi"],
-  [/patates/i, "patates"], [/soğan.*kuru|kuru soğan/i, "kuru-sogan"], [/sarımsak.*kuru|kuru sarımsak/i, "sarimsak"], [/anason/i, "anason"],
-  [/çörek ?otu/i, "corek-otu"], [/kimyon/i, "kimyon"], [/kişniş/i, "kisnis"], [/rezene/i, "rezene"], [/safran/i, "safran"],
+  [/^durum buğdayı$/i, "makarnalik-bugday"], [/^buğday, durum buğdayı hariç$/i, "bugday"], [/^arpa \((biralık|diğer)\)$/i, "arpa"],
+  [/^çavdar$/i, "cavdar"], [/^yulaf$/i, "yulaf"], [/^triticale$/i, "tritikale"], [/^mısır \(slaj\)$/i, "silajlik-misir"], [/^mısır$/i, "misir"],
+  [/^çeltik$/i, "celtik"], [/^darı$/i, "dari"], [/^kara buğday$/i, "karabugday"], [/^sorgum$/i, "sorgum"], [/^kaplıca$/i, "siyez-bugdayi"],
+  [/^nohut, kuru$/i, "nohut"], [/^mercimek, kuru \(kırmızı\)$/i, "kirmizi-mercimek"], [/^mercimek, kuru \(yeşil\)$/i, "yesil-mercimek"],
+  [/^fasulye, kuru$/i, "kuru-fasulye"], [/^bakla, kuru \(insan/i, "bakla"], [/^börülce, kuru$/i, "borulce"],
+  [/^ayçiçeği tohumu \(çerezlik\)$/i, "cerezlik-aycicegi"], [/^ayçiçeği tohumu \(yağlık\)$/i, "aycicegi"], [/^kanola/i, "kanola"],
+  [/^soya fasulyesi$/i, "soya"], [/^yerfıstığı/i, "yerfistigi"], [/^susam tohumu$/i, "susam"], [/^aspir tohumu$/i, "aspir"], [/^keten tohumu$/i, "keten"],
+  [/kütlü/i, "pamuk"], [/^şeker pancarı$/i, "seker-pancari"], [/^tütün/i, "tutun"], [/^haşhaş kapsülü/i, "hashas"], [/^şerbetçiotu/i, "serbetciotu"],
+  [/^yonca \(yeşilot\)$/i, "yonca"], [/^korunga \(yeşilot\)$/i, "korunga"], [/^fiğ \(yeşilot\)$/i, "fig"], [/^sudan otu/i, "sudan-otu"],
+  [/^hayvan pancarı$/i, "hayvan-pancari"], [/^italyan çimi/i, "italyan-cimi"], [/^patates \(tatlı patates hariç\)$/i, "patates"],
+  [/^adaçayı$/i, "adacayi"], [/^lavanta$/i, "lavanta"], [/^oğul otu/i, "melisa"], [/^şeker otu/i, "stevia"],
 ];
 export const urunEsle = (ad) => (ESLE.find(([r]) => r.test(ad)) || [])[1] || null;
 
@@ -22,7 +22,7 @@ export async function ilceYukle(env, rows, slugify) {
   await env.DB.prepare(ILCE_SCHEMA).run();
   const temiz = rows.filter((r) => r.il && r.ilce && r.urun).map((r) => ({ il_slug: slugify(r.il), ilce_slug: slugify(r.ilce), ilce: r.ilce, urun: r.urun, slug: urunEsle(r.urun), alan: r.alan ?? null, uretim: r.uretim ?? null, yil: r.yil }));
   for (let i = 0; i < temiz.length; i += 2000) {
-    await env.DB.prepare(`INSERT OR REPLACE INTO ilce_uretim (il_slug, ilce_slug, ilce, urun, slug, alan, uretim, yil) SELECT json_extract(value,'$.il_slug'), json_extract(value,'$.ilce_slug'), json_extract(value,'$.ilce'), json_extract(value,'$.urun'), json_extract(value,'$.slug'), json_extract(value,'$.alan'), json_extract(value,'$.uretim'), json_extract(value,'$.yil') FROM json_each(?1)`).bind(JSON.stringify(temiz.slice(i, i + 2000))).run();
+    await env.DB.prepare(`INSERT INTO ilce_uretim (il_slug, ilce_slug, ilce, urun, slug, alan, uretim, yil) SELECT json_extract(value,'$.il_slug'), json_extract(value,'$.ilce_slug'), json_extract(value,'$.ilce'), json_extract(value,'$.urun'), json_extract(value,'$.slug'), json_extract(value,'$.alan'), json_extract(value,'$.uretim'), json_extract(value,'$.yil') FROM json_each(?1) WHERE true ON CONFLICT(il_slug, ilce_slug, urun, yil) DO UPDATE SET alan = COALESCE(excluded.alan, alan), uretim = COALESCE(excluded.uretim, uretim), slug = excluded.slug, ilce = excluded.ilce`).bind(JSON.stringify(temiz.slice(i, i + 2000))).run();
   }
   return { yazilan: temiz.length, eslesen: temiz.filter((r) => r.slug).length };
 }
