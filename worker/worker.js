@@ -384,6 +384,8 @@ async function ilcePage(env, ilSlug, ilceSlug) {
   if (!il) return null;
   const ilce = await env.DB.prepare("SELECT * FROM geo_ilce WHERE il_id = ?1 AND slug = ?2").bind(il.id, ilceSlug).first();
   if (!ilce) return null;
+  /* TKGM bazı adları Türkçe karaktersiz verir (ör. "Polatli"); TÜİK veya ilan kaydındaki yazım tercih edilir */
+  try { const d = (await env.DB.prepare("SELECT ilce FROM ilce_uretim WHERE il_slug = ?1 AND ilce_slug = ?2 LIMIT 1").bind(ilSlug, ilceSlug).first())?.ilce || (await env.DB.prepare("SELECT ilce FROM ihale WHERE il_slug = ?1 AND ilce_slug = ?2 AND kaynak = 'uyap' LIMIT 1").bind(ilSlug, ilceSlug).first())?.ilce; if (d && slugify(d) === ilceSlug) ilce.ad = d.toLocaleLowerCase("tr").replace(/(^|[\s-])\S/g, (c) => c.toLocaleUpperCase("tr")); } catch (e) {}
   const [mahsR, c, news, v, uretim, ilUr] = await Promise.all([
     env.DB.prepare("SELECT ad, lat, lng FROM geo_mahalle WHERE ilce_id = ?1").bind(ilce.id).all(),
     env.DB.prepare("SELECT * FROM pages WHERE section = 'ilce' AND slug = ?1 AND status = 'published'").bind(`${ilSlug}-${ilceSlug}`).first(),
