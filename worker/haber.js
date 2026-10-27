@@ -9,6 +9,7 @@ let calisanModel = null;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
 
 import { KONU, sahne } from "./sahne.js";
+import { paylas } from "./ihale.js";
 export { KONU };
 
 const KONU_TAHMIN = [
@@ -300,6 +301,7 @@ export async function haberDetay(env, id, { esc, ago, trDate, CATS, page, html, 
 ${maddeler.length ? `<section class="hb-maddeler"><h2>Öne çıkan bilgiler</h2><ul>${maddeler.map((m) => `<li>${esc(m)}</li>`).join("")}</ul></section>` : ""}
 ${onemHtml(n, esc)}
 <a class="hb-btn" href="${esc(n.url)}" target="_blank" rel="noopener nofollow">Haberin tamamı: ${esc(n.source)} ↗</a>
+${paylas(`${n.title} · Topraklık Haber Bülteni`, `https://topraklik.com/haberler/${n.id}`, esc)}
 ${linkler.length ? `<h2>Topraklık'ta ilgili</h2><div class="hb-ilgili">${linkler.map(([l, t, a]) => `<a href="${esc(l)}">${esc(t)}<small>${esc(a)}</small></a>`).join("")}</div>` : ""}
 <p class="src">Bu özet ve değerlendirme, ${esc(n.source)} kaynağındaki habere dayanılarak Topraklık tarafından yapay zekâ desteğiyle hazırlanmıştır; görsel konuyu temsil eden bir çizimdir. Ayrıntılar ve kesin bilgi için haberin aslını okuyun.</p></article>
 <aside><h3>Aynı konudan</h3>${benzer.map((b) => `<a class="hb-aside-kart" href="/haberler/${esc(b.id)}" style="--k:${kk(b).k}">${haberGorsel(b)}<span><b>${esc(b.title)}</b><small>${esc(b.source)} · ${esc(ago(b.published_at))}</small></span></a>`).join("") || `<a class="card" href="/haberler"><b>Tüm haberler →</b></a>`}<a class="card" href="/ihaleler"><b>Güncel ihaleler →</b></a></aside></div>`;

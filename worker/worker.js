@@ -13,6 +13,8 @@ import { ARACLAR, aracSayfa, aracIndex } from "./araclar.js";
 import { parselApi, parselSayfa, PARSEL_CSS } from "./parsel.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { SATIS_TURU_SQL } from "./ihale.js";
+import { ziyaretKaydet, olayKaydet, sayfaMi, OLAY_JS } from "./analiz.js";
+import { panel } from "./panel.js";
 import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
 import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
@@ -237,7 +239,7 @@ function page({ title, description, path, body, current, jsonld, noindex }) {
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
 <footer><div class="wrap"><span>© ${new Date().getFullYear()} Topraklık · Toprağa dair ne varsa.</span><span><a href="/hakkimizda">Hakkımızda</a> · <a href="/iletisim">İletişim</a> · <a href="/yasal">Yasal bilgiler</a> · <a href="mailto:info@topraklik.com">info@topraklik.com</a></span></div></footer>
-${mobilAlt(path.split("?")[0])}
+${mobilAlt(path.split("?")[0])}${OLAY_JS}
 </body></html>`;
 }
 
@@ -464,7 +466,7 @@ async function homepage(req, env, originRes) {
   const navLinks = `<li><a href="/ihaleler">İhaleler</a></li><li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
   const res = new HTMLRewriter()
     .on("head", { element(e) { e.append(INJECT_CSS + MOBIL_META + `<style>${MOBIL_CSS}</style>`, { html: true }); } })
-    .on("body", { element(e) { if (tk) e.prepend(tk, { html: true }); e.append(mobilAlt("/"), { html: true }); } })
+    .on("body", { element(e) { if (tk) e.prepend(tk, { html: true }); e.append(mobilAlt("/") + OLAY_JS, { html: true }); } })
     .on("header.top .nav ul", { element(e) { e.append(navLinks, { html: true }); } })
     .on("section#ihaleler", { element(e) { e.setAttribute("id", "ihaleler-ornek"); if (ib) e.before(ib, { html: true }); if (nb) e.before(nb, { html: true }); } })
     .transform(originRes);
@@ -504,6 +506,7 @@ export default {
   async fetch(req, env, ctxExec) {
     const url = new URL(req.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
+    if (sayfaMi(req, path) && !url.searchParams.has("x")) ctxExec.waitUntil(ziyaretKaydet(req, env, url, path).catch(() => {}));
     const ttl = req.method === "GET" && !url.searchParams.has("x") ? onbellekSuresi(path) : 0;
     if (!ttl) return this.isle(req, env, ctxExec);
     const cache = caches.default, key = new Request(url.toString(), { method: "GET" });
@@ -526,6 +529,8 @@ export default {
     try {
       if (path === "/api/haberler") { try { return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
+      if (path === "/api/olay" && req.method === "POST") return olayKaydet(req, env);
+      if (path === "/okan" || path === "/okan/plan") return panel(req, env, url, { page });
       if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=86400" } });
       if (path === "/haberler") return newsPage(env, url);
       { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }
@@ -597,14 +602,15 @@ export default {
     const min = Math.floor(event.scheduledTime / 60000);
     ctx.waitUntil((async () => {
       const gm = min % 1440; // UTC günün dakikası; 241–246 = İstanbul 07:01–07:06
-      if (gm >= 60 && gm <= 99) { try { await bikAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'bik', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
-      if (gm >= 241 && gm <= 246) { try { await fiyatAdim(env, gm - 241); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'fiyat', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       const kaydet = (job, e) => env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, ?2, ?3)").bind(new Date().toISOString(), job, String(e.message || e).slice(0, 500)).run().catch(() => {});
       /* Workers Paid: işler aynı turda birlikte çalışabilir */
-      if (min % 30 === 0) { try { await collectNews(env, Math.floor(min / 30)); } catch (e) { await kaydet("news", e); } }
-      if (min % 2 === 1) { try { await uyapAdim(env, { IL_AD, slugify, butce: 120 }); } catch (e) { await kaydet("uyap", e); } }
-      if (min % 4 === 2) { try { await haberAdim(env, 3); } catch (e) { await kaydet("haber", e); } }
-      if (min % 10 === 4) { try { await geoStep(env); } catch (e) { await kaydet("geo", e); } }
+      const is = async (job, fn) => { try { const r = await fn(); await env.DB.prepare("INSERT OR REPLACE INTO durum (k, v) VALUES (?1, ?2)").bind("son:" + job, JSON.stringify({ at: new Date().toISOString(), ozet: (typeof r === "string" ? r : JSON.stringify(r)).slice(0, 300) })).run().catch(() => {}); } catch (e) { await kaydet(job, e); } };
+      if (gm >= 60 && gm <= 99) return is("bik", () => bikAdim(env, { IL_AD, slugify }));
+      if (gm >= 241 && gm <= 246) return is("fiyat", () => fiyatAdim(env, gm - 241));
+      if (min % 30 === 0) await is("news", () => collectNews(env, Math.floor(min / 30)));
+      if (min % 2 === 1) await is("uyap", () => uyapAdim(env, { IL_AD, slugify, butce: 120 }));
+      if (min % 4 === 2) await is("haber", () => haberAdim(env, 3));
+      if (min % 10 === 4) await is("geo", () => geoStep(env));
     })());
   },
 };

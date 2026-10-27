@@ -65,7 +65,9 @@ const trTarih = (t) => { if (!t) return "—"; const [d, s] = t.split("T"); cons
 const kalan = (t) => { const d = Math.round((Date.parse(t.slice(0, 10)) - Date.parse(bugun())) / 864e5); return d < 0 ? "ihale tarihi geçti" : d === 0 ? "bugün" : d === 1 ? "yarın" : `${d} gün kaldı`; };
 const dekar = (m2) => (m2 >= 1000 ? ` (${(m2 / 1000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} dönüm)` : "");
 
-export const IHALE_CSS = `.ilist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+export const IHALE_CSS = `.ih-dugmeler{display:flex;flex-wrap:wrap;gap:8px}.ih-3b{background:#2E5130!important;color:#fff!important;border-color:#2E5130!important}
+.paylas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:6px 0 14px;font-size:13.5px}.paylas span{font-weight:800;color:var(--muted);margin-right:2px}.paylas a,.paylas button{border:1px solid var(--line);background:var(--card);color:var(--ink);font:700 13px Manrope,system-ui,sans-serif;border-radius:999px;padding:7px 12px;text-decoration:none;cursor:pointer}.paylas .pw{background:#25D366;border-color:#25D366;color:#fff}.paylas .pt{background:#229ED9;border-color:#229ED9;color:#fff}
+.ilist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .ic{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
 .ic h3{margin:0;font-size:17px;line-height:1.3}.ic h3 a{color:var(--ink);text-decoration:none}.ic h3 a:hover{color:var(--green)}
 .ic .yer{font-size:14px;color:var(--muted)}.ic .fiyat{font-size:21px;font-weight:800;color:var(--green)}
@@ -158,6 +160,11 @@ ${rows.length ? `<div class="ilist">${rows.map((x) => kart(x, esc)).join("")}</d
   return html(page({ title: `${baslikSeo} · Topraklık`, description: desc, path: pathBase, body, current: "/ihaleler" }), 200, 900, typeof dbHata !== "undefined");
 }
 
+const sl = (t) => String(t || "").replace(/İ/g, "i").replace(/I/g, "ı").toLocaleLowerCase("tr").replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+export function paylas(metin, link, esc) {
+  const t = encodeURIComponent(metin + "\n" + link), u = encodeURIComponent(link);
+  return `<div class="paylas" data-link="${esc(link)}"><span>Paylaş:</span><a class="pw" href="https://wa.me/?text=${t}" target="_blank" rel="noopener" data-olay="paylas:whatsapp">WhatsApp</a><a class="pt" href="https://t.me/share/url?url=${u}&text=${encodeURIComponent(metin)}" target="_blank" rel="noopener" data-olay="paylas:telegram">Telegram</a><a class="pf" href="https://www.facebook.com/sharer/sharer.php?u=${u}" target="_blank" rel="noopener" data-olay="paylas:facebook">Facebook</a><a class="px" href="https://x.com/intent/post?text=${t}" target="_blank" rel="noopener" data-olay="paylas:x">X</a><button type="button" onclick="navigator.clipboard&&navigator.clipboard.writeText(this.parentNode.dataset.link);this.textContent='Kopyalandı ✓'">Bağlantıyı kopyala</button></div>`;
+}
 export async function ihaleDetay(env, id, ctx) {
   const { esc, page, html, IL_URUN } = ctx;
   let x = null;
@@ -196,7 +203,8 @@ ${satir("Hazine hissesi", esc(x.hisse))}
 ${satir("Kiralama amacı", esc(x.amac))}
 ${satir(icra ? "İlan no" : "Taşınmaz no", esc(x.tasinmaz_no))}
 </tbody></table>
-<p><a class="btn dolu" href="${esc(x.link)}" target="_blank" rel="noopener nofollow">İlanın aslını ${esc(KAYNAK[x.kaynak]?.ad)}'ta aç</a></p>
+<p class="ih-dugmeler"><a class="btn dolu" href="${esc(x.link)}" target="_blank" rel="noopener nofollow">İlanın aslını ${esc(KAYNAK[x.kaynak]?.ad)}'ta aç</a>${x.ada && x.parsel && x.mahalle ? ` <a class="btn ih-3b" href="/parsel-sorgu?il=${esc(sl(x.il))}&ilce=${esc(sl(x.ilce))}&mahalle=${esc(sl(String(x.mahalle).replace(/\s+(mahallesi|mah\.?|köyü|koyu)$/i, "")))}&ada=${esc(x.ada)}&parsel=${esc(x.parsel)}">3B parselde gör</a>` : ""}</p>
+${paylas(`${baslik} · Topraklık'ta incele`, `https://topraklik.com/ihaleler/ilan/${x.id}`, esc)}
 ${ek?.metin ? `<h2>İlan metni</h2><details><summary>İlanın tam metnini göster</summary><p style="white-space:pre-line;font-size:14.5px">${esc(ek.metin)}</p></details>` : ""}
 <h2>İhaleye nasıl katılınır?</h2>
 ${icra ? `<p>İcra ve mahkeme satışları UYAP e-Satış portalında elektronik açık artırmayla yapılır. e-Devlet ile esatis.uyap.gov.tr adresine girip ilandaki dosyayı bulur, muhammen bedelin %10'u kadar teminatı yatırarak teklif verirsiniz. İlk artırmada en az muhammen bedelin %50'si istenir; alıcı çıkmazsa ikinci artırma yapılır.</p><p>Adım adım anlatım için <a href="/rehber/icra-ihalesine-nasil-girilir">icra ihalesine nasıl girilir</a>, masraflar için <a href="/rehber/icra-ihalesi-masraflari">icra ihalesi masrafları</a> rehberine bakın.</p>` : `<p>Hazine taşınmaz ihaleleri 2886 sayılı Devlet İhale Kanunu'na göre yapılır. Katılmak için ihale saatinden önce geçici teminatı yatırıp, kimlik ve tebligat adresi belgeleriyle ihaleyi yapan Milli Emlak müdürlüğüne başvurursunuz. Ayrıntılar ilanın şartnamesinde yazar; bazı ihalelerde ilk ödeme peşin, kalanı taksitle ödenebilir.</p>
