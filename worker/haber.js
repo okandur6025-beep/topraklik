@@ -246,7 +246,7 @@ export function bulten(rows, ctx) {
   const kullan = new Set();
   const al = (n) => (kullan.add(n), n);
   const lead = al(zengin.find((n) => n.onem && ["arazi", "hibe"].includes(n.category)) || zengin[0]);
-  const gun = zengin.filter((n) => n !== lead).slice(0, 5);
+  const gun = zengin.filter((n) => n !== lead).slice(0, 5); gun.forEach(al);
   let h = `<section class="bt-ust"><article class="bt-lead" style="--k:${kk(lead).k}"><a href="${esc(ic(lead))}" tabindex="-1" aria-hidden="true">${haberGorsel(lead, "buyuk")}</a>
 <div class="hb-ust"><span class="hb-kicker">Manşet · ${esc(CATS[lead.category] || "Gündem")}</span><span class="hb-zaman">${esc(lead.source)} · ${esc(ctx.ago(lead.published_at))}</span></div>
 <h2><a href="${esc(ic(lead))}">${esc(lead.title)}</a></h2><p class="hb-ozet">${esc(lead.ozet)}</p>${onemHtml(lead, esc)}<div class="hb-alt"><span></span><a href="/haberler/${esc(lead.id)}">Haberin ayrıntısı →</a></div></article>

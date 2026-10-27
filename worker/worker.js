@@ -15,6 +15,7 @@ import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuret
 import { SATIS_TURU_SQL } from "./ihale.js";
 import { ziyaretKaydet, olayKaydet, sayfaMi, OLAY_JS } from "./analiz.js";
 import { panel } from "./panel.js";
+import { anaSayfa } from "./anasayfa.js";
 import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
 import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS, tekrarAyikla, benzerMi } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
@@ -224,11 +225,12 @@ details{border-bottom:1px solid var(--line);padding:10px 0}summary{font-weight:7
 aside .card{margin-bottom:12px}
 @media (max-width:900px){.layout{grid-template-columns:1fr}}
 footer{border-top:1px solid var(--line);background:var(--paper);padding:24px 0;font-size:13.5px;color:var(--muted)}
-footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}`;
+footer .ayak{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:24px;padding-top:12px}footer .ayak p{margin:8px 0 0;max-width:34ch}footer .ayak nav{display:flex;flex-direction:column;gap:7px}footer .ayak nav b{color:var(--ink);font-size:13px;letter-spacing:.06em;text-transform:uppercase}footer .ayak a{color:var(--muted);text-decoration:none}footer .ayak a:hover{color:var(--green)}footer .ayak .brand{color:var(--ink);font-size:20px}footer .ayak-alt{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;font-size:12.5px}
+@media (max-width:760px){footer .ayak{grid-template-columns:1fr 1fr}footer .ayak>div:first-child{grid-column:1/-1}}`;
 
-const NAV = [["/", "Ana sayfa"], ["/ihaleler", "İhaleler"], ["/araclar", "Araçlar"], ["/haberler", "Haberler"], ["/rehber", "İhale ve tapu"], ["/hibe", "Hibe ve destek"], ["/il", "İller"], ["/urun", "Ürünler"]];
+const NAV = [["/ihaleler", "İhaleler"], ["/parsel-sorgu", "Parsel sorgu"], ["/haberler", "Haber Bülteni"], ["/urun", "Ürünler"], ["/rehber", "Rehber"], ["/araclar", "Araçlar"]];
 
-function page({ title, description, path, body, current, jsonld, noindex }) {
+function page({ title, description, path, body, current, jsonld, noindex, tam, ekCss }) {
   const url = SITE + path;
   return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}"><link rel="canonical" href="${url}">${noindex ? '<meta name="robots" content="noindex">' : ""}
@@ -236,11 +238,15 @@ function page({ title, description, path, body, current, jsonld, noindex }) {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">${MOBIL_META}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
-<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}${path === "/parsel-sorgu" ? PARSEL_CSS : ""}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
+<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}${path === "/parsel-sorgu" ? PARSEL_CSS : ""}${ekCss || ""}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
 <header class="top"><div class="wrap">${GERI_BTN}<a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
-<main class="wrap">${body}</main>
-<footer><div class="wrap"><span>© ${new Date().getFullYear()} Topraklık · Toprağa dair ne varsa.</span><span><a href="/hakkimizda">Hakkımızda</a> · <a href="/iletisim">İletişim</a> · <a href="/yasal">Yasal bilgiler</a> · <a href="mailto:info@topraklik.com">info@topraklik.com</a></span></div></footer>
+<main class="${tam ? "tam" : "wrap"}">${body}</main>
+<footer><div class="wrap ayak"><div><a class="brand" href="/"><img src="/favicon.svg" alt="" width="26" height="30">Topraklık</a><p>Arsa, tarla ve tarım için resmî kaynaklı, güncel ve ücretsiz bilgi.</p></div>
+<nav aria-label="Keşfet"><b>Keşfet</b><a href="/ihaleler">İhaleler</a><a href="/parsel-sorgu">3B parsel sorgu</a><a href="/haberler">Haber Bülteni</a><a href="/araclar">Hesaplama araçları</a></nav>
+<nav aria-label="Rehber"><b>Rehber</b><a href="/rehber">İhale ve tapu rehberi</a><a href="/hibe">Hibe ve destek</a><a href="/urun">Ürünler ve kazanç</a><a href="/il">İller</a></nav>
+<nav aria-label="Kurumsal"><b>Kurumsal</b><a href="/hakkimizda">Hakkımızda</a><a href="/iletisim">İletişim</a><a href="/yasal">Yasal bilgiler</a><a href="mailto:info@topraklik.com">info@topraklik.com</a></nav></div>
+<div class="wrap ayak-alt">© ${new Date().getFullYear()} Topraklık · Topraklık resmî bir kurum değildir; ihalelerin tarafı veya aracısı değildir.</div></footer>
 ${mobilAlt(path.split("?")[0])}${OLAY_JS}
 </body></html>`;
 }
@@ -533,6 +539,7 @@ export default {
     try {
       if (path === "/api/haberler") { try { return Response.json(tekrarAyikla(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 40 })).slice(0, 30), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
+      if (path === "/" && req.method === "GET") return anaSayfa(env, { page, html, esc, latestNews, CATS, ago });
       if (path === "/api/olay" && req.method === "POST") return olayKaydet(req, env);
       if (path === "/okan" || path === "/okan/plan") return panel(req, env, url, { page, onay: await yetkili(req, env) });
       if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=86400" } });
@@ -596,7 +603,6 @@ export default {
       }
       const res = await proxy(req, url);
       if (path === "/yasal" && (res.headers.get("content-type") || "").includes("text/html")) { const t = (await res.text()).split('<span class="ph">[Veri sorumlusunun adı soyadı / şirket unvanı]</span>, <span class="ph">[adres]</span>').join("Topraklık Ekibi, Ankara"); return new Response(t, { status: res.status, headers: res.headers }); }
-      if (path === "/" && req.method === "GET" && (res.headers.get("content-type") || "").includes("text/html")) return homepage(req, env, res);
       return res;
     } catch (e) {
       if (url.pathname.startsWith("/admin/")) return Response.json({ hata: e.message, yigin: String(e.stack || "").slice(0, 600) }, { status: 500 });

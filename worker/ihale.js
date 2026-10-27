@@ -109,7 +109,7 @@ export const IHALE_CSS = `.ih-dugmeler{display:flex;flex-wrap:wrap;gap:8px}.ih-3
 .sayfa{display:flex;gap:8px;justify-content:center;margin:22px 0}
 .ozet{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 16px}.ozet span{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px}.ozet b{font-size:17px;color:var(--green)}`;
 
-function kart(x, esc) {
+export function kart(x, esc) {
   const sm = satilanM2(x), birim = sm && x.bedel && x.tip !== "kira" ? x.bedel / sm : 0, h = hisseli(x);
   const baslik = `${x.cins || "Taşınmaz"} · ${x.m2 ? `${nf(sm)} m²${h ? " hisse" : dekar(sm)}` : "alan ilanda"}`;
   return `<div class="ic"><div><span class="tag">${esc(turEtiket(x))}</span>${h ? `<span class="tag hisse">Hisseli</span>` : ""}<span class="gun">${esc(asama(x, bugun()).metin)}</span></div>
