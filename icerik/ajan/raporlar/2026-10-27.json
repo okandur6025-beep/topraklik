@@ -1,0 +1,247 @@
+{
+ "tarih": "2026-10-27",
+ "ozet": "Kontrol edilen 12 aramanın hiçbirinde topraklik.com ilk 10'da görünmedi; 'site:topraklik.com' ve marka araması da sonuç döndürmedi, yani site henüz arama dizininde görünmüyor olabilir. Ayrıca sitede 3 rehber adresine iç bağlantı verilmiş ama rehberlerin kendisi yok; bunlardan 'icra-ihalesine-nasil-girilir' için taslak yazıldı.",
+ "gorunurluk": [
+  {
+   "sorgu": "icradan satılık tarla",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Muğla Milas'ta tarla icradan satılıktır",
+     "url": "https://www.istiklal.com.tr/ekonomi/mugla-milasta-tarla-icradan-satiliktir-670052h"
+    },
+    {
+     "baslik": "Kayseri Sarıoğlan'da 36 dönüm tarla icradan satılık",
+     "url": "https://www.istiklal.com.tr/ekonomi/kayseri-sarioglanda-36-donum-tarla-icradan-satilik-671070h"
+    },
+    {
+     "baslik": "Türkiye Gazetesi",
+     "url": "https://www.turkiyegazetesi.com.tr/ekonomi/626074.aspx"
+    }
+   ]
+  },
+  {
+   "sorgu": "icradan satılık arsa",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "İzmir'in merkezinde yatırımlık arsa icradan satışa çıktı",
+     "url": "https://www.takvim.com.tr/otomobil/izmirin-merkezinde-kacirilmayacak-yatirimlik-arsa-firsati-icradan-satisa-cikti-4641378"
+    },
+    {
+     "baslik": "Sanayi Gazetesi",
+     "url": "https://sanayigazetesi.com.tr/?p=215994"
+    },
+    {
+     "baslik": "Sanayi Gazetesi",
+     "url": "https://sanayigazetesi.com.tr/?p=216050"
+    }
+   ]
+  },
+  {
+   "sorgu": "milli emlak arazi ihalesi",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Trilyonluk araziler kimde kalacak (BirGün)",
+     "url": "https://www.birgun.net/haber/trilyonluk-araziler-kimde-kalacak-21392"
+    },
+    {
+     "baslik": "Milli Emlak haberleri (Vatan)",
+     "url": "https://www.gazetevatan.com/haberleri/milli-emlak"
+    },
+    {
+     "baslik": "Elbistan ihale ilanı (ÇŞB)",
+     "url": "https://webdosya.csb.gov.tr/db/kahramanmaras/duyurular/1-ihale-ilani-elbistan_20251208011254.pdf"
+    }
+   ]
+  },
+  {
+   "sorgu": "hazine arazisi satışı",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Hazine Arazileri Satışa Çıkıyor (Bianet)",
+     "url": "https://bianet.org/haber/hazine-arazileri-satisa-cikiyor-1121"
+    },
+    {
+     "baslik": "Hazine arazileri elde kaldı (Bianet)",
+     "url": "https://bianet.org/haber/hazine-arazileri-elde-kaldi-9087"
+    },
+    {
+     "baslik": "Bodrum'un taşı toprağı satılık (Sözcü)",
+     "url": "https://www.sozcu.com.tr/bodrumun-tasi-topragi-satilik-wp7821992"
+    }
+   ]
+  },
+  {
+   "sorgu": "hazine arazisi kiralama",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Hazine arazileri yatırıma açılıyor: çiftçilere 10 yıllık kiralama (Dünya)",
+     "url": "https://www.dunya.com/ekonomi/hazine-arazileri-yatirima-aciliyor-ciftcilere-10-yillik-kiralama-ve-satin-alma-imkani-haberi-844411"
+    },
+    {
+     "baslik": "Hazine arazileri 10 yıla kadar çiftçilere kiralanacak (Diken)",
+     "url": "https://www.diken.com.tr/?p=599977"
+    },
+    {
+     "baslik": "Hazine arazileri tarımsal üretime açılıyor (Para)",
+     "url": "https://www.paradergi.com.tr/sektorler/2022/03/21/hazine-arazileri-tarimsal-uretime-aciliyor"
+    }
+   ]
+  },
+  {
+   "sorgu": "uyap e-satış tarla",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Bir ilimizin 6 mahallesi satılıyor (Sözcü)",
+     "url": "https://www.sozcu.com.tr/bir-ilimizin-6-mahallesi-satiliyor-tarla-bag-ve-villalar-tek-tek-ihaleye-cikiyor-p335991"
+    },
+    {
+     "baslik": "UYAP e-Satış haberleri (Bursa Hakimiyet)",
+     "url": "https://www.bursahakimiyet.com.tr/haberleri/uyap-e-satis"
+    },
+    {
+     "baslik": "UYAP haberleri (Bursa Hakimiyet)",
+     "url": "https://www.bursahakimiyet.com.tr/haberleri/uyap"
+    }
+   ]
+  },
+  {
+   "sorgu": "icra ihalesine nasıl girilir",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Çok ucuza ev sahibi olabilirsiniz (Hürriyet)",
+     "url": "https://www.hurriyet.com.tr/galeri-cok-ucuza-ev-sahibi-olabilirsiniz-41106959"
+    },
+    {
+     "baslik": "İcradan arsa satın alma rehberi 2026 (FFK Partner Hukuk)",
+     "url": "https://www.ffkpartnerhukuk.com.tr/icradan-arsa-satin-alma-rehberi-2026-guncel-rehber-icra-ihalesinden-arsa-alirken-bilmeniz-gereken-her-sey/"
+    },
+    {
+     "baslik": "Mercedes, BMW ve Audi yarı fiyatına (Takvim)",
+     "url": "https://www.takvim.com.tr/otomobil/vatandaslar-akin-etti-mercedes-bmw-ve-audi-yari-fiyatina-satiliyor-4339808"
+    }
+   ]
+  },
+  {
+   "sorgu": "icra ihalesi masrafları",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "İcra ihalelerinde ince ayrıntılar (Emlak Kulisi)",
+     "url": "https://emlakkulisi.com/icra-ihalelerinde-ince-ayrintilar-neler/10004"
+    },
+    {
+     "baslik": "Karşılama prensibi kuralları (Lexpera)",
+     "url": "https://www.lexpera.com.tr/literatur/kitaplar/ikinci-bolum-karsilama-prensibi-kurallari-978-625-432-253-2"
+    },
+    {
+     "baslik": "İcra Masrafı Hesaplama (Mıhçı Hukuk)",
+     "url": "https://mihci.av.tr/?p=17748"
+    }
+   ]
+  },
+  {
+   "sorgu": "parsel sorgulama 3d",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Parsel Sorgu kullanım kılavuzu (TKGM)",
+     "url": "https://parselsorgu.tkgm.gov.tr/app/documents/parsel-sorgu-kullanim-kilavuzu-v.1.2.pdf"
+    },
+    {
+     "baslik": "pkgdex (ilgisiz)",
+     "url": "https://pkgdex.org/provides/python3.11dist(parsel)"
+    },
+    {
+     "baslik": "parse.gl (ilgisiz)",
+     "url": "https://parse.gl/brands/z3d-ai"
+    }
+   ]
+  },
+  {
+   "sorgu": "ada parsel sorgulama",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Tapu ada parsel no ile arsa sorgulama (eleman.net)",
+     "url": "https://www.eleman.net/is-rehberi/pratik-bilgiler/tapu-ada-parsel-no-ile-arsa-sorgulama-nasil-yapilir-h13557"
+    },
+    {
+     "baslik": "Parsel sorgulama nasıl yapılır (Ensonhaber)",
+     "url": "https://www.ensonhaber.com/gundem/parsel-sorgulama-nasil-yapilir-tkgm-takbis-ile-ada-parsel-sorgulama"
+    },
+    {
+     "baslik": "Yandex Yaçevap",
+     "url": "https://yandex.com.tr/yacevap/t/parsel"
+    }
+   ]
+  },
+  {
+   "sorgu": "hisseli tapu nedir",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Kadim Hukuk",
+     "url": "https://kadimhukuk.com.tr/?p=22903"
+    },
+    {
+     "baslik": "Hisseli tapu nedir? Satışı ve riskleri (Harbiye Hukuk)",
+     "url": "https://www.harbiyehukuk.com/?p=11869"
+    },
+    {
+     "baslik": "Hisseli tapu nedir (Emlak Kulisi)",
+     "url": "https://emlakkulisi.com/hisseli-tapu-nedir/156312"
+    }
+   ]
+  },
+  {
+   "sorgu": "hisseli tarla alınır mı",
+   "sira": null,
+   "url": null,
+   "ilkler": [
+    {
+     "baslik": "Hisseli tarla bölünür mü (Emlak Kulisi)",
+     "url": "https://emlakkulisi.com/guncel/hisseli-tarla-bolunur-mu/872334"
+    },
+    {
+     "baslik": "Hisseli tarla devri (Emlak Kulisi)",
+     "url": "https://emlakkulisi.com/guncel/hisseli-tarla-devri/872263"
+    },
+    {
+     "baslik": "Yandex Yaçevap",
+     "url": "https://yandex.com.tr/yacevap/t/tarla"
+    }
+   ]
+  }
+ ],
+ "oneriler": [
+  "Google Search Console'da topraklik.com mülkünü doğrulayıp site haritasını (seo.js'nin ürettiği sitemap) gönderin ve 'Sayfalar' raporunda dizine eklenen sayfa sayısına bakın: marka adı ve site: araması bile sonuç vermedi, sıralama çalışmasından önce dizine girme sorunu çözülmeli.",
+  "Kırık iç bağlantıları kapatın: /rehber/icra-ihalesine-nasil-girilir (ihale.js, worker.js, araclar.js, icradan-ev-almak), /rehber/icra-ihalesi-masraflari (araclar.js, icradan-ev-almak) ve /rehber/hazine-arazisi-nasil-alinir (ihale.js, hazine-arazisi-kiralama) adreslerinde rehber yok. İlki için bu çalışmada taslak hazır; onaylayınca biri kapanır.",
+  "Araclar.js'deki icra maliyet aracı ve icradan-ev-almak rehberi 'arsa ve tarlada KDV çoğunlukla %10' diyor; bu oran resmî kaynaktan doğrulanamadı. Borçlunun KDV mükellefi olup olmamasına göre KDV hiç çıkmayabilir ya da genel oran uygulanabilir; GİB'den teyit edilene kadar 'oran şartnamede yazar' demek daha güvenli.",
+  "/ihaleler sayfasının title ve H1'ine 'İcradan satılık tarla ve arsa' ifadesini doğrudan koyun: ilk iki aramada ilk sırayı tek tek ilan haberleri (istiklal.com.tr, emlakkulisi) tutuyor; liste sayfası ilçe ve il süzmesiyle bu sorguya daha iyi cevap verebilir.",
+  "'icra ihalesi masrafları' için ayrı rehber yazılsın (sonraki çalışmada): ilk 3'te hesap araçları ve genel yazılar var, güncel ve kalem kalem bir rehber yok. KDV ve ihale damga vergisi oranları GİB'den doğrulandıktan sonra yazılmalı.",
+  "'hazine arazisi satışı' ve 'milli emlak arazi ihalesi' aramalarında ilk 3'ü haber siteleri tutuyor; 'hazine-arazisi-nasil-alinir' rehberi (peşin/taksitli satış, geçici teminat, 2886 usulleri) bu açığı doldurabilir. Bu çalışmada güncel şartları resmî kaynaktan tam doğrulayamadığım için yazılmadı.",
+  "/parsel-sorgu sayfasına 'TKGM 3B parsel sorgu' ve 'ada parsel sorgulama' ifadelerini başlık ve açıklamada kullanın; 'parsel sorgulama 3d' aramasında TKGM dışındaki sonuçlar ilgisiz, yani rekabet zayıf."
+ ],
+ "taslaklar": [
+  "icra-ihalesine-nasil-girilir"
+ ],
+ "not": "Görünürlük, Claude'un web arama aracıyla kontrol edildi; bu araç Google'ın Türkiye sonuçlarıyla birebir aynı olmayabilir. 'sira: null' = ilk sonuçlarda topraklik.com görülmedi."
+}

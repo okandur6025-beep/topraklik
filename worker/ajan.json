@@ -1,4 +1,350 @@
 {
- "taslaklar": [],
- "raporlar": []
+ "taslaklar": [
+  {
+   "dosya": "icra-ihalesine-nasil-girilir.json",
+   "slug": "icra-ihalesine-nasil-girilir",
+   "hedef": "icra ihalesine nasıl girilir",
+   "tarih": "2026-10-27",
+   "title": "İcra ihalesine nasıl girilir? e-Satış adım adım (2026)",
+   "desc": "UYAP e-Satış'ta icra ihalesine katılım: teminat (%10), 7 günlük teklif süresi, en düşük teklif, ödeme süresi ve 2026'da gelen %5 idari para cezası.",
+   "h1": "İcra ihalesine nasıl girilir?",
+   "cevap": "İcra ihalelerine e-Devlet şifresiyle UYAP e-Satış portalından (esatis.uyap.gov.tr) katılırsınız. Muhammen kıymetin %10'u kadar teminatı süresinde yatırır, 7 günlük artırma süresi içinde elektronik teklif verirsiniz. İhaleyi alırsanız bedeli, sonuç tutanağının ilanından itibaren 7 gün içinde ödemeniz gerekir.",
+   "bolumler": [
+    [
+     "İcra ihaleleri artık nerede yapılıyor?",
+     "Adalet Bakanlığı'na göre icra ve mahkeme satışları **2 Ocak 2023'ten bu yana tüm ülkede elektronik ortamda** yapılıyor; mezat salonunda fiziki ihale uygulaması sona erdi. Satışlar UYAP'a bağlı **e-Satış portalında** (esatis.uyap.gov.tr) açık artırma olarak yürütülür.\n\nPortala e-Devlet şifresiyle giriş yapan her vatandaş ve şirket temsilcisi satışları inceleyebilir, ihale belgelerini görebilir, teminat yatırabilir, teklif verebilir ve kalan ihale bedelini ödeyebilir.\n\nTarla, arsa ve bağ-bahçe satışlarını il ve ilçeye göre süzmek için [icradan satılık tarla ve arsalar](/ihaleler?tur=icra) sayfasını kullanabilirsiniz; ilanın aslı her zaman e-Satış portalındadır."
+    ],
+    [
+     "Teklif vermeden önce neleri kontrol etmelisiniz?",
+     "İcra satışında taşınmaz \"olduğu gibi\" satılır; sonradan \"bilmiyordum\" demek çoğu zaman sonuç vermez. Teklif vermeden önce şunlara bakın:\n\n- **Satış ilanı ve şartname:** Muhammen kıymet, teminat tutarı, artırma tarihleri, hisseli satış olup olmadığı ve alıcıya ait masraflar burada yazar. Teklif veren, şartnameyi kabul etmiş sayılır.\n- **Kıymet takdir raporu:** Taşınmazın niteliği, yolu, suyu, üzerindeki yapı ve ağaçlar hakkında bilirkişi tespitlerini içerir.\n- **Tapu kaydı ve konum:** Ada ve parsel numarasıyla parselin yerini [3B parsel sorgu](/parsel-sorgu) üzerinden görün; hisseli satışta payınızın ne anlama geldiğini [hisseli tapu nedir](/rehber/hisseli-tapu-nedir) rehberinde okuyun.\n- **İmar ve tarım arazisi durumu:** Tarlada yapılaşma ve bölünme sınırlamaları için [tarlaya ev yapılır mı](/rehber/tarlaya-ev-yapilir-mi) ve [5403 sayılı Kanun'a göre bölünme](/rehber/tarim-arazisi-bolunme-5403) rehberlerine bakın.\n- **Yerinde görme:** Mümkünse taşınmazı yerinde görün; ilandaki fotoğraflar her zaman güncel olmayabilir."
+    ],
+    [
+     "Teminat ne kadar, ne zaman yatırılır?",
+     "İcra ve İflas Kanunu'nun 114. maddesine göre (taşınmazlarda 126. madde bu hükme yollama yapar) artırmaya katılmak için malın **muhammen kıymetinin %10'u** kadar teminat gerekir.\n\n- **Nakit teminat:** e-Satış üzerinden icra dairesinin banka hesabına, en geç **artırma süresinin bitiminden önceki gün saat 23.30'a kadar** yatırılır.\n- **Banka teminat mektubu:** Kesin ve süresiz olmalı; en geç artırma süresinin bitiminden **önceki iş günü mesai bitimine kadar** icra dairesine verilir.\n- **Vekil veya temsilciyle ya da birden fazla kişi birlikte (müşterek) katılım:** Bu durumda da önceki iş günü mesai bitimine kadar icra dairesine başvurmak gerekir.\n\nÖrnek: Muhammen kıymeti 1.500.000 TL olan bir tarlada teminat 150.000 TL'dir. İhaleyi alamazsanız teminat iade edilir."
+    ],
+    [
+     "Artırma nasıl işler, en az ne kadar teklif verilir?",
+     "- Birinci ve ikinci artırmanın gün ve saat aralığı, artırma başlamadan **en az 15 gün önce** e-Satış portalında ilan edilir.\n- Her artırmada teklif verme süresi **7 gündür**. İkinci artırma, birincinin bitiminden itibaren **en geç bir ay içinde** başlar.\n- Teklifler arasındaki artış, muhammen kıymetin **binde birinden ve 100 TL'den** az olamaz.\n- Sürenin son 10 dakikasında yeni teklif gelirse artırma bir defaya mahsus **10 dakika uzar**.\n- En yüksek teklifi veren, daha yüksek teklif gelmedikçe teklifini geri çekemez ve teminatını alamaz.\n\n**En düşük teklif:** İhalenin gerçekleşmesi için teklif; muhammen kıymetin **%50'si** ile satış isteyen alacaklıdan önce gelen (rüçhanlı) alacakların toplamından hangisi büyükse onu ve ayrıca paraya çevirme ve paylaştırma masraflarını geçmelidir.\n\n**İstisna:** Mirasçılar dışında paydaşı olmayan ve miras yoluyla edinilmiş taşınmazların ortaklığın giderilmesi satışlarında birinci artırma yalnızca malik mirasçılar arasında yapılır ve teklif muhammen kıymetin %100'ünü geçmelidir. Ayrıntılar [mirasçılara özel ilk artırma](/rehber/mirasci-ilk-artirma-kurali) rehberinde."
+    ],
+    [
+     "İhaleyi kazanınca ne olur? Ödeme süresi",
+     "Artırma bittikten sonraki ilk iş günü **artırma sonuç tutanağı** düzenlenir ve aynı gün portalda ilan edilir. İhale bedelinin (yatırdığınız teminat düşüldükten sonra kalan kısmın) bu ilandan itibaren **7 gün içinde** ödenmesi gerekir. İhalenin feshi istenmiş olsa bile ödeme yükümlülüğü devam eder.\n\nTapuya tescil ve teslim, **ihale kesinleştikten** ve şartnamede alıcıya yüklenen vergiler (damga vergisi, varsa KDV) yatırıldıktan sonra yapılır. Bedelin yanında ödenecek kalemleri önceden görmek için [icra ihalesi maliyet hesaplama](/araclar/icra-ihalesi-maliyet-hesaplama) aracını kullanın."
+    ],
+    [
+     "Bedeli ödemezseniz: teminat ve 2026'daki yeni para cezası",
+     "Süresinde ödeme yapmayan alıcının **teminatı iade edilmez**; önce satış masraflarına, kalanı alacaklılara (ortaklığın giderilmesi satışlarında paydaşlara) mahsup edilir ve mal yeniden artırmaya çıkarılır.\n\n31 Temmuz 2026'da yayımlanan **7589 sayılı Kanun** ile buna bir yaptırım eklendi: İhale bedelini yatırmayan en yüksek teklif sahibine, **teklif ettiği bedelin %5'i** oranında idari para cezası verilir. Ceza icra dairesince kesilir ve vergi dairesi aracılığıyla tahsil edilir. Kanunun geçiş hükmüne göre bu değişiklikler, yürürlükten önce ilanı yapılmış artırmalara uygulanmaz.\n\nBu yüzden teklif vermeden önce toplam tutarı 7 gün içinde ödeyebileceğinizden emin olun; kredi onayını ihaleden sonra beklemek risklidir."
+    ],
+    [
+     "İhalenin feshi ve tapunun gecikmesi",
+     "İhaleye katılanlar ve ilgililer, usulsüzlük iddiasıyla ihale tarihinden itibaren **7 gün içinde** icra mahkemesinden ihalenin feshini isteyebilir. Satış isteyen alacaklı, borçlu ve tapuda kayıtlı ilgililer dışındaki kişiler fesih isterken ihale bedeli üzerinden nispi harç öder ve teminat gösterir; talep reddedilirse mahkeme ayrıca para cezasına hükmedebilir.\n\nFesih davası sürerken tescil yapılmaz. Sürecin ayrıntıları için [icra ihalesinin feshi](/rehber/icra-ihalesinin-feshi) rehberine bakın.\n\n*Bu rehber genel bilgi amaçlıdır. Belirli bir satışla ilgili hak kaybı yaşamamak için satış ilanını ve şartnameyi esas alın, gerekirse bir avukata veya ilgili icra dairesine danışın.*"
+    ]
+   ],
+   "sss": [
+    [
+     "İcra ihalesine girmek için avukat gerekir mi?",
+     "Hayır. e-Devlet şifresi olan herkes e-Satış portalından kendi adına teminat yatırıp teklif verebilir. Vekil aracılığıyla katılmak isteyenler, artırma bitiminden önceki iş günü mesai bitimine kadar icra dairesine başvurmalıdır."
+    ],
+    [
+     "İcra ihalesinde teminat yüzde kaç?",
+     "Muhammen kıymetin %10'u. Nakit teminat artırma bitiminden önceki gün 23.30'a kadar, banka teminat mektubu ise önceki iş günü mesai bitimine kadar verilmelidir."
+    ],
+    [
+     "İlk artırmada muhammen bedelin yarısına alınabilir mi?",
+     "Evet; genel kuralda birinci ve ikinci artırmada teklif muhammen kıymetin %50'sini ve varsa rüçhanlı alacaklar ile satış masraflarını geçmelidir. Mirasçılara özel ilk artırmada ise %100 şartı vardır."
+    ],
+    [
+     "İhaleyi kazandıktan sonra kaç gün içinde ödeme yapılır?",
+     "Artırma sonuç tutanağının portalda ilanından itibaren 7 gün içinde."
+    ],
+    [
+     "İhaleden vazgeçersem ne olur?",
+     "Teminat yanar. 7589 sayılı Kanun'la, yürürlükten sonra ilan edilen artırmalarda ayrıca teklif edilen bedelin %5'i oranında idari para cezası uygulanır."
+    ],
+    [
+     "Tapu ne zaman devredilir?",
+     "İhale kesinleştikten (fesih süresi geçtikten veya fesih talebi reddedilip kesinleştikten) ve şartnamedeki vergiler ödendikten sonra."
+    ]
+   ],
+   "kaynak": [
+    [
+     "UYAP – e-Satış",
+     "https://uyap.gov.tr/e-satis"
+    ],
+    [
+     "UYAP – e-Satış ile ihalelere katılmak",
+     "https://uyap.gov.tr/e-satis-ile-ihalelere-katilmak-artik-cok-kolay"
+    ],
+    [
+     "TBMM – 7343 sayılı Kanun metni (İİK 111/b, 114, 115, 126, 129, 130, 134)",
+     "https://cdn.tbmm.gov.tr/KKBSPublicFile/D27/Y5/T2/KanunMetni/9c9f033f-7b65-4e33-a55a-ffad250e21e8.html"
+    ],
+    [
+     "TBMM – 7589 sayılı Kanun metni (İİK 114 değişikliği)",
+     "https://cdn.tbmm.gov.tr/KKBSPublicFile/D28/Y4/KanunMetni/b074aa2a-c1eb-4bd5-b5d9-4b61a9ac3924.htm"
+    ],
+    [
+     "2004 sayılı İcra ve İflas Kanunu (güncel metin)",
+     "https://www.mevzuat.gov.tr/MevzuatMetin/1.3.2004.pdf"
+    ]
+   ],
+   "ilgili": [
+    "icradan-ev-almak",
+    "icra-ihalesinin-feshi",
+    "mirasci-ilk-artirma-kurali",
+    "/araclar/icra-ihalesi-maliyet-hesaplama",
+    "/ihaleler"
+   ],
+   "ajanNotu": "Bu adres sitede 5 yerden bağlantı alıyor (ihale.js, worker.js, araclar.js, icradan-ev-almak rehberi) ama rehber yok; yani şu an kırık iç bağlantı. Doğrulama: teminat %10, 15 gün ilan, 7 gün teklif süresi, 1 ay, binde bir/100 TL, 10 dk uzama, %50 şartı, 7 gün ödeme ve 7 gün fesih TBMM'deki 7343 sayılı Kanun metninden; %100 mirasçı kuralı ve %5 idari para cezası TBMM'deki 7589 sayılı Kanun metninden (kabul 16.07.2026); 2 Ocak 2023 tarihi uyap.gov.tr'den. mevzuat.gov.tr ve resmigazete.gov.tr bu ortamdan okunamadı; yayından önce 114. maddenin güncel konsolide metnine bir göz atmanızı öneririm. KDV oranı bilerek yazılmadı (doğrulanamadı)."
+  }
+ ],
+ "raporlar": [
+  {
+   "dosya": "2026-10-27.json",
+   "tarih": "2026-10-27",
+   "ozet": "Kontrol edilen 12 aramanın hiçbirinde topraklik.com ilk 10'da görünmedi; 'site:topraklik.com' ve marka araması da sonuç döndürmedi, yani site henüz arama dizininde görünmüyor olabilir. Ayrıca sitede 3 rehber adresine iç bağlantı verilmiş ama rehberlerin kendisi yok; bunlardan 'icra-ihalesine-nasil-girilir' için taslak yazıldı.",
+   "gorunurluk": [
+    {
+     "sorgu": "icradan satılık tarla",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Muğla Milas'ta tarla icradan satılıktır",
+       "url": "https://www.istiklal.com.tr/ekonomi/mugla-milasta-tarla-icradan-satiliktir-670052h"
+      },
+      {
+       "baslik": "Kayseri Sarıoğlan'da 36 dönüm tarla icradan satılık",
+       "url": "https://www.istiklal.com.tr/ekonomi/kayseri-sarioglanda-36-donum-tarla-icradan-satilik-671070h"
+      },
+      {
+       "baslik": "Türkiye Gazetesi",
+       "url": "https://www.turkiyegazetesi.com.tr/ekonomi/626074.aspx"
+      }
+     ]
+    },
+    {
+     "sorgu": "icradan satılık arsa",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "İzmir'in merkezinde yatırımlık arsa icradan satışa çıktı",
+       "url": "https://www.takvim.com.tr/otomobil/izmirin-merkezinde-kacirilmayacak-yatirimlik-arsa-firsati-icradan-satisa-cikti-4641378"
+      },
+      {
+       "baslik": "Sanayi Gazetesi",
+       "url": "https://sanayigazetesi.com.tr/?p=215994"
+      },
+      {
+       "baslik": "Sanayi Gazetesi",
+       "url": "https://sanayigazetesi.com.tr/?p=216050"
+      }
+     ]
+    },
+    {
+     "sorgu": "milli emlak arazi ihalesi",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Trilyonluk araziler kimde kalacak (BirGün)",
+       "url": "https://www.birgun.net/haber/trilyonluk-araziler-kimde-kalacak-21392"
+      },
+      {
+       "baslik": "Milli Emlak haberleri (Vatan)",
+       "url": "https://www.gazetevatan.com/haberleri/milli-emlak"
+      },
+      {
+       "baslik": "Elbistan ihale ilanı (ÇŞB)",
+       "url": "https://webdosya.csb.gov.tr/db/kahramanmaras/duyurular/1-ihale-ilani-elbistan_20251208011254.pdf"
+      }
+     ]
+    },
+    {
+     "sorgu": "hazine arazisi satışı",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Hazine Arazileri Satışa Çıkıyor (Bianet)",
+       "url": "https://bianet.org/haber/hazine-arazileri-satisa-cikiyor-1121"
+      },
+      {
+       "baslik": "Hazine arazileri elde kaldı (Bianet)",
+       "url": "https://bianet.org/haber/hazine-arazileri-elde-kaldi-9087"
+      },
+      {
+       "baslik": "Bodrum'un taşı toprağı satılık (Sözcü)",
+       "url": "https://www.sozcu.com.tr/bodrumun-tasi-topragi-satilik-wp7821992"
+      }
+     ]
+    },
+    {
+     "sorgu": "hazine arazisi kiralama",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Hazine arazileri yatırıma açılıyor: çiftçilere 10 yıllık kiralama (Dünya)",
+       "url": "https://www.dunya.com/ekonomi/hazine-arazileri-yatirima-aciliyor-ciftcilere-10-yillik-kiralama-ve-satin-alma-imkani-haberi-844411"
+      },
+      {
+       "baslik": "Hazine arazileri 10 yıla kadar çiftçilere kiralanacak (Diken)",
+       "url": "https://www.diken.com.tr/?p=599977"
+      },
+      {
+       "baslik": "Hazine arazileri tarımsal üretime açılıyor (Para)",
+       "url": "https://www.paradergi.com.tr/sektorler/2022/03/21/hazine-arazileri-tarimsal-uretime-aciliyor"
+      }
+     ]
+    },
+    {
+     "sorgu": "uyap e-satış tarla",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Bir ilimizin 6 mahallesi satılıyor (Sözcü)",
+       "url": "https://www.sozcu.com.tr/bir-ilimizin-6-mahallesi-satiliyor-tarla-bag-ve-villalar-tek-tek-ihaleye-cikiyor-p335991"
+      },
+      {
+       "baslik": "UYAP e-Satış haberleri (Bursa Hakimiyet)",
+       "url": "https://www.bursahakimiyet.com.tr/haberleri/uyap-e-satis"
+      },
+      {
+       "baslik": "UYAP haberleri (Bursa Hakimiyet)",
+       "url": "https://www.bursahakimiyet.com.tr/haberleri/uyap"
+      }
+     ]
+    },
+    {
+     "sorgu": "icra ihalesine nasıl girilir",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Çok ucuza ev sahibi olabilirsiniz (Hürriyet)",
+       "url": "https://www.hurriyet.com.tr/galeri-cok-ucuza-ev-sahibi-olabilirsiniz-41106959"
+      },
+      {
+       "baslik": "İcradan arsa satın alma rehberi 2026 (FFK Partner Hukuk)",
+       "url": "https://www.ffkpartnerhukuk.com.tr/icradan-arsa-satin-alma-rehberi-2026-guncel-rehber-icra-ihalesinden-arsa-alirken-bilmeniz-gereken-her-sey/"
+      },
+      {
+       "baslik": "Mercedes, BMW ve Audi yarı fiyatına (Takvim)",
+       "url": "https://www.takvim.com.tr/otomobil/vatandaslar-akin-etti-mercedes-bmw-ve-audi-yari-fiyatina-satiliyor-4339808"
+      }
+     ]
+    },
+    {
+     "sorgu": "icra ihalesi masrafları",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "İcra ihalelerinde ince ayrıntılar (Emlak Kulisi)",
+       "url": "https://emlakkulisi.com/icra-ihalelerinde-ince-ayrintilar-neler/10004"
+      },
+      {
+       "baslik": "Karşılama prensibi kuralları (Lexpera)",
+       "url": "https://www.lexpera.com.tr/literatur/kitaplar/ikinci-bolum-karsilama-prensibi-kurallari-978-625-432-253-2"
+      },
+      {
+       "baslik": "İcra Masrafı Hesaplama (Mıhçı Hukuk)",
+       "url": "https://mihci.av.tr/?p=17748"
+      }
+     ]
+    },
+    {
+     "sorgu": "parsel sorgulama 3d",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Parsel Sorgu kullanım kılavuzu (TKGM)",
+       "url": "https://parselsorgu.tkgm.gov.tr/app/documents/parsel-sorgu-kullanim-kilavuzu-v.1.2.pdf"
+      },
+      {
+       "baslik": "pkgdex (ilgisiz)",
+       "url": "https://pkgdex.org/provides/python3.11dist(parsel)"
+      },
+      {
+       "baslik": "parse.gl (ilgisiz)",
+       "url": "https://parse.gl/brands/z3d-ai"
+      }
+     ]
+    },
+    {
+     "sorgu": "ada parsel sorgulama",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Tapu ada parsel no ile arsa sorgulama (eleman.net)",
+       "url": "https://www.eleman.net/is-rehberi/pratik-bilgiler/tapu-ada-parsel-no-ile-arsa-sorgulama-nasil-yapilir-h13557"
+      },
+      {
+       "baslik": "Parsel sorgulama nasıl yapılır (Ensonhaber)",
+       "url": "https://www.ensonhaber.com/gundem/parsel-sorgulama-nasil-yapilir-tkgm-takbis-ile-ada-parsel-sorgulama"
+      },
+      {
+       "baslik": "Yandex Yaçevap",
+       "url": "https://yandex.com.tr/yacevap/t/parsel"
+      }
+     ]
+    },
+    {
+     "sorgu": "hisseli tapu nedir",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Kadim Hukuk",
+       "url": "https://kadimhukuk.com.tr/?p=22903"
+      },
+      {
+       "baslik": "Hisseli tapu nedir? Satışı ve riskleri (Harbiye Hukuk)",
+       "url": "https://www.harbiyehukuk.com/?p=11869"
+      },
+      {
+       "baslik": "Hisseli tapu nedir (Emlak Kulisi)",
+       "url": "https://emlakkulisi.com/hisseli-tapu-nedir/156312"
+      }
+     ]
+    },
+    {
+     "sorgu": "hisseli tarla alınır mı",
+     "sira": null,
+     "url": null,
+     "ilkler": [
+      {
+       "baslik": "Hisseli tarla bölünür mü (Emlak Kulisi)",
+       "url": "https://emlakkulisi.com/guncel/hisseli-tarla-bolunur-mu/872334"
+      },
+      {
+       "baslik": "Hisseli tarla devri (Emlak Kulisi)",
+       "url": "https://emlakkulisi.com/guncel/hisseli-tarla-devri/872263"
+      },
+      {
+       "baslik": "Yandex Yaçevap",
+       "url": "https://yandex.com.tr/yacevap/t/tarla"
+      }
+     ]
+    }
+   ],
+   "oneriler": [
+    "Google Search Console'da topraklik.com mülkünü doğrulayıp site haritasını (seo.js'nin ürettiği sitemap) gönderin ve 'Sayfalar' raporunda dizine eklenen sayfa sayısına bakın: marka adı ve site: araması bile sonuç vermedi, sıralama çalışmasından önce dizine girme sorunu çözülmeli.",
+    "Kırık iç bağlantıları kapatın: /rehber/icra-ihalesine-nasil-girilir (ihale.js, worker.js, araclar.js, icradan-ev-almak), /rehber/icra-ihalesi-masraflari (araclar.js, icradan-ev-almak) ve /rehber/hazine-arazisi-nasil-alinir (ihale.js, hazine-arazisi-kiralama) adreslerinde rehber yok. İlki için bu çalışmada taslak hazır; onaylayınca biri kapanır.",
+    "Araclar.js'deki icra maliyet aracı ve icradan-ev-almak rehberi 'arsa ve tarlada KDV çoğunlukla %10' diyor; bu oran resmî kaynaktan doğrulanamadı. Borçlunun KDV mükellefi olup olmamasına göre KDV hiç çıkmayabilir ya da genel oran uygulanabilir; GİB'den teyit edilene kadar 'oran şartnamede yazar' demek daha güvenli.",
+    "/ihaleler sayfasının title ve H1'ine 'İcradan satılık tarla ve arsa' ifadesini doğrudan koyun: ilk iki aramada ilk sırayı tek tek ilan haberleri (istiklal.com.tr, emlakkulisi) tutuyor; liste sayfası ilçe ve il süzmesiyle bu sorguya daha iyi cevap verebilir.",
+    "'icra ihalesi masrafları' için ayrı rehber yazılsın (sonraki çalışmada): ilk 3'te hesap araçları ve genel yazılar var, güncel ve kalem kalem bir rehber yok. KDV ve ihale damga vergisi oranları GİB'den doğrulandıktan sonra yazılmalı.",
+    "'hazine arazisi satışı' ve 'milli emlak arazi ihalesi' aramalarında ilk 3'ü haber siteleri tutuyor; 'hazine-arazisi-nasil-alinir' rehberi (peşin/taksitli satış, geçici teminat, 2886 usulleri) bu açığı doldurabilir. Bu çalışmada güncel şartları resmî kaynaktan tam doğrulayamadığım için yazılmadı.",
+    "/parsel-sorgu sayfasına 'TKGM 3B parsel sorgu' ve 'ada parsel sorgulama' ifadelerini başlık ve açıklamada kullanın; 'parsel sorgulama 3d' aramasında TKGM dışındaki sonuçlar ilgisiz, yani rekabet zayıf."
+   ],
+   "taslaklar": [
+    "icra-ihalesine-nasil-girilir"
+   ],
+   "not": "Görünürlük, Claude'un web arama aracıyla kontrol edildi; bu araç Google'ın Türkiye sonuçlarıyla birebir aynı olmayabilir. 'sira: null' = ilk sonuçlarda topraklik.com görülmedi."
+  }
+ ]
 }
