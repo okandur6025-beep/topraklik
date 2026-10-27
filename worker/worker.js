@@ -6,6 +6,7 @@
 import { URUN, URUN_LISTE, IL_AD, urunleriIl, urunPage, urunJsonLd, URUN_CSS, fiyatUygula } from "./urun.js";
 import { fiyatAdim, urunFiyat } from "./fiyat.js";
 import { milliEmlakTopla } from "./topla.js";
+import { bikAdim, bikDetay } from "./bik.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
@@ -409,7 +410,7 @@ async function homepage(req, env, originRes) {
   let ihl = { rows: [], sayi: {} };
   try { items = await tickerItems(env); news = await latestNews(env, { limit: 6 }); ihl = await ihaleAnaSayfa(env); } catch (e) {}
   const tk = tickerHtml(items), nb = newsBoxHtml(news);
-  const ib = ihl.rows.length ? `<section class="tk-news" id="gercek-ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel hazine arazi ihaleleri</h2><div class="sec-sub">Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
+  const ib = ihl.rows.length ? `<section class="tk-news" id="gercek-ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel tarla ve arsa ihaleleri</h2><div class="sec-sub">İcradan ve mahkemeden satılık ${(ihl.sayi.icra || 0).toLocaleString("tr-TR")} tarla ve arsa, Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
   const navLinks = `<li><a href="/ihaleler">İhaleler</a></li><li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
   const res = new HTMLRewriter()
     .on("head", { element(e) { e.append(INJECT_CSS, { html: true }); } })
@@ -427,7 +428,7 @@ async function proxy(req, url) {
 }
 
 export default {
-  async fetch(req, env, ctx) {
+  async fetch(req, env, ctxExec) {
     const url = new URL(req.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
     try {
@@ -444,7 +445,7 @@ export default {
       }
       const ih = path.match(/^\/ihaleler(?:\/([a-z0-9-]+))?(?:\/([a-z0-9-]+))?$/);
       if (ih) {
-        const ctx = { esc, page, html, IL_URUN: urunleriIl };
+        const ctx = { esc, page, html, IL_URUN: urunleriIl, bikDetay, exec: ctxExec };
         if (ih[1] === "ilan" && ih[2]) { const r = await ihaleDetay(env, ih[2], ctx); if (r) return r; }
         else return ihaleListe(env, url, ctx, ih[1] ? { il: ih[1], ...(ih[2] ? { ilce: ih[2] } : {}) } : {});
       }
@@ -464,6 +465,7 @@ export default {
         if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401 });
         if (url.pathname === "/admin/probe") { const r = await fetch(url.searchParams.get("u"), { headers: { "user-agent": UA } }); const t = await r.text(); return Response.json({ status: r.status, len: t.length, items: (t.match(/<item[ >]/g) || []).length, head: t.slice(0, 300), props: (t.match(/"properties":\{[^}]*\}/g) || []).slice(0, 4), tail: t.slice(-300) }); }
         if (url.pathname === "/admin/geo") return Response.json(await geoStep(env));
+        if (url.pathname === "/admin/bik") return Response.json(await bikAdim(env, { IL_AD, slugify, zorla: url.searchParams.get("zorla") === "1", sayfaSayisi: parseInt(url.searchParams.get("n") || "12", 10) }));
         if (url.pathname === "/admin/fiyat") return Response.json(await fiyatAdim(env, parseInt(url.searchParams.get("parca") || "0", 10)));
         if (url.pathname === "/admin/collect") return Response.json(await collectNews(env, parseInt(url.searchParams.get("slot") || "0", 10)));
       }
@@ -480,6 +482,7 @@ export default {
     const min = Math.floor(event.scheduledTime / 60000);
     ctx.waitUntil((async () => {
       const gm = min % 1440; // UTC günün dakikası; 241–246 = İstanbul 07:01–07:06
+      if (gm >= 60 && gm <= 99) { try { await bikAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'bik', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (gm >= 241 && gm <= 246) { try { await fiyatAdim(env, gm - 241); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'fiyat', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (min % 30 === 0) await collectNews(env, Math.floor(min / 30));
       else { try { await geoStep(env); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'geo', ?2)").bind(new Date().toISOString(), e.message).run(); } }
