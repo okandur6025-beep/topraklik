@@ -434,7 +434,7 @@ export default {
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/haberler") return newsPage(env, url);
       if (path === "/sitemap.xml") return sitemap(env);
-      if (path === "/topla/milliemlak.js") return new Response(`return (${milliEmlakTopla.toString()})(KEY);`, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store", ...ihaleCors(req) } });
+      if (path === "/topla/milliemlak.js") return new Response(`const __name = (f) => f;\nreturn (${milliEmlakTopla.toString()})(KEY);`, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store", ...ihaleCors(req) } });
       if (path === "/admin/ihale-yukle") {
         const cors = ihaleCors(req);
         if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
