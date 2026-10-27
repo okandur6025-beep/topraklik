@@ -115,5 +115,5 @@ export async function halTopla(env) {
 }
 
 export async function urunFiyat(env, slug) {
-  try { return (await env.DB.prepare("SELECT * FROM fiyat WHERE urun = ?1").bind(slug).all()).results || []; } catch (e) { return []; }
+  try { return ((await env.DB.prepare("SELECT * FROM fiyat WHERE urun = ?1").bind(slug).all()).results || []).filter((r) => (r.kaynak === "hal" ? HAL[slug] : BORSA[slug])); } catch (e) { return []; }
 }
