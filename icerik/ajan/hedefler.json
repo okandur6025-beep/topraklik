@@ -1,0 +1,29 @@
+{
+  "aciklama": "SEO ajanının Google'da izlediği aramalar. Her çalışmada 12 tanesi sırayla kontrol edilir. 'sayfa' alanı bu aramada öne çıkmasını istediğimiz Topraklık sayfasıdır.",
+  "aramalar": [
+    { "sorgu": "icradan satılık tarla", "sayfa": "/ihaleler" },
+    { "sorgu": "icradan satılık arsa", "sayfa": "/ihaleler" },
+    { "sorgu": "milli emlak arazi ihalesi", "sayfa": "/ihaleler?kaynak=milliemlak" },
+    { "sorgu": "hazine arazisi satışı", "sayfa": "/rehber/hazine-arazisi-nasil-alinir" },
+    { "sorgu": "hazine arazisi kiralama", "sayfa": "/rehber/hazine-arazisi-kiralama" },
+    { "sorgu": "uyap e-satış tarla", "sayfa": "/ihaleler" },
+    { "sorgu": "icra ihalesine nasıl girilir", "sayfa": "/rehber/icra-ihalesine-nasil-girilir" },
+    { "sorgu": "icra ihalesi masrafları", "sayfa": "/rehber/icra-ihalesi-masraflari" },
+    { "sorgu": "parsel sorgulama 3d", "sayfa": "/parsel-sorgu" },
+    { "sorgu": "ada parsel sorgulama", "sayfa": "/parsel-sorgu" },
+    { "sorgu": "hisseli tapu nedir", "sayfa": "/rehber/hisseli-tapu-nedir" },
+    { "sorgu": "hisseli tarla alınır mı", "sayfa": "/rehber/hisseli-tapu-nedir" },
+    { "sorgu": "tapu harcı hesaplama 2026", "sayfa": "/araclar/tapu-harci-hesaplama" },
+    { "sorgu": "dönüm metrekare hesaplama", "sayfa": "/araclar/donum-metrekare-cevirme" },
+    { "sorgu": "tarlaya ev yapılır mı", "sayfa": "/rehber/tarlaya-ev-yapilir-mi" },
+    { "sorgu": "tarla imara nasıl açılır", "sayfa": "/rehber/tarla-imara-nasil-acilir" },
+    { "sorgu": "ortaklığın giderilmesi satışı", "sayfa": "/rehber/ortakligin-giderilmesi-davasi" },
+    { "sorgu": "5403 tarım arazisi bölünme", "sayfa": "/rehber/tarim-arazisi-bolunme-5403" },
+    { "sorgu": "polatlı icradan satılık tarla", "sayfa": "/il/ankara/polatli" },
+    { "sorgu": "konya icradan satılık tarla", "sayfa": "/ihaleler/konya" },
+    { "sorgu": "beyşehir satılık tarla", "sayfa": "/il/konya/beysehir" },
+    { "sorgu": "dekar başına buğday kazancı", "sayfa": "/urun/bugday" },
+    { "sorgu": "tarlaya ne ekilir en karlı", "sayfa": "/urun" },
+    { "sorgu": "tarım hibe destekleri 2026", "sayfa": "/hibe" }
+  ]
+}
