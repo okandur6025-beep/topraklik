@@ -4,6 +4,8 @@
 // - /haberler, /rehber, /hibe, /il, /urun sayfalarını D1'den üretir
 // - Her 2 saatte bir tarım haberlerini toplar (cron)
 import { URUN, URUN_LISTE, IL_AD, urunleriIl, urunPage, urunJsonLd, URUN_CSS } from "./urun.js";
+import { milliEmlakTopla } from "./topla.js";
+import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
 const UA = "Mozilla/5.0 (compatible; TopraklikBot/1.0; +https://topraklik.com)";
@@ -197,17 +199,17 @@ aside .card{margin-bottom:12px}
 footer{border-top:1px solid var(--line);background:var(--paper);padding:24px 0;font-size:13.5px;color:var(--muted)}
 footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}`;
 
-const NAV = [["/", "Ana sayfa"], ["/haberler", "Haberler"], ["/rehber", "İhale ve tapu"], ["/hibe", "Hibe ve destek"], ["/il", "İller"], ["/urun", "Ürünler"]];
+const NAV = [["/", "Ana sayfa"], ["/ihaleler", "İhaleler"], ["/haberler", "Haberler"], ["/rehber", "İhale ve tapu"], ["/hibe", "Hibe ve destek"], ["/il", "İller"], ["/urun", "Ürünler"]];
 
-function page({ title, description, path, body, current, jsonld }) {
+function page({ title, description, path, body, current, jsonld, noindex }) {
   const url = SITE + path;
   return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)}</title><meta name="description" content="${esc(description)}"><link rel="canonical" href="${url}">
+<title>${esc(title)}</title><meta name="description" content="${esc(description)}"><link rel="canonical" href="${url}">${noindex ? '<meta name="robots" content="noindex">' : ""}
 <meta property="og:type" content="website"><meta property="og:site_name" content="Topraklık"><meta property="og:locale" content="tr_TR">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
-<style>${CSS}${URUN_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
+<style>${CSS}${URUN_CSS}${IHALE_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
 <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
@@ -315,7 +317,7 @@ ${urunListHtml(await ilUrunleri(env, slug), `${il.ad} ilinde yetişen ürünler`
 <h2>${esc(il.ad)} ilçeleri</h2>${ilces.length ? `<div class="grid">${ilces.map((x) => `<a class="card" href="/il/${slug}/${x.slug}"><b>${esc(x.ad)}</b><span>${x.mah_count != null ? x.mah_count + " mahalle / köy" : "mahalleler yükleniyor"}</span></a>`).join("")}</div>` : `<p>İlçeler yükleniyor.</p>`}
 ${faq.length ? `<h2>Sık sorulan sorular</h2>${faq.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}` : ""}
 <div class="src">İdari bölünme: Tapu ve Kadastro Genel Müdürlüğü${sources.length ? " · Kaynaklar: " + sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)}</a>`).join(", ") : ""}</div></article>
-<aside><h3>Rehberler</h3><a class="card" href="/rehber/icra-ihalesine-nasil-girilir"><b>İcra ihalesine nasıl girilir?</b></a><a class="card" href="/rehber/tarla-alirken-dikkat-edilecekler"><b>Tarla alırken dikkat edilecekler</b></a><a class="card" href="/hibe"><b>Hibe ve destekler</b></a><h3>${esc(il.ad)} haberleri</h3>${newsList(news)}</aside></div>`;
+<aside>${await ihaleKutusu(env, { il: slug }, esc)}<h3>Rehberler</h3><a class="card" href="/rehber/icra-ihalesine-nasil-girilir"><b>İcra ihalesine nasıl girilir?</b></a><a class="card" href="/rehber/tarla-alirken-dikkat-edilecekler"><b>Tarla alırken dikkat edilecekler</b></a><a class="card" href="/hibe"><b>Hibe ve destekler</b></a><h3>${esc(il.ad)} haberleri</h3>${newsList(news)}</aside></div>`;
   const jsonld = [{ "@context": "https://schema.org", "@type": "Place", name: il.ad, address: { "@type": "PostalAddress", addressRegion: il.ad, addressCountry: "TR" }, ...(il.lat ? { geo: { "@type": "GeoCoordinates", latitude: il.lat, longitude: il.lng } } : {}) }];
   if (faq.length) jsonld.push({ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) });
   return html(page({ title: c?.title ? `${c.title} · Topraklık` : `${il.ad} ilçeleri, tarım ve arazi ihaleleri · Topraklık`, description: c?.description || `${il.ad} ilinin ${ilces.length} ilçesi ve mahalleleri, tarım bilgileri, ne ekilir, tarla ve arsa ihaleleri, ${il.ad} tarım haberleri.`, path: `/il/${slug}`, body, current: "/il", jsonld }), 200, 900);
@@ -337,7 +339,7 @@ ${urunListHtml(await ilUrunleri(env, ilSlug), `${ilce.ad} ve ${il.ad} çevresind
 <h2>${esc(ilce.ad)} mahalle ve köyleri</h2>${mahs.length ? `<ul style="columns:3 180px;padding-left:18px">${mahs.map((m) => `<li>${esc(m.ad)}</li>`).join("")}</ul>` : `<p>Liste yükleniyor.</p>`}
 <p>Bu ilçedeki bir parseli sorgulamak için <a href="/#harita">3B parsel sorgu</a> aracına ada ve parsel numarasını girin. ${esc(il.ad)} geneli tarım bilgileri için <a href="/il/${ilSlug}">${esc(il.ad)} sayfasına</a> bakın.</p>
 <div class="src">İdari bölünme: Tapu ve Kadastro Genel Müdürlüğü</div></article>
-<aside><h3>${esc(ilce.ad)} ve ${esc(il.ad)} haberleri</h3>${newsList(news.length ? news : await newsAbout(env, [il.ad], 5))}</aside></div>`;
+<aside>${await ihaleKutusu(env, { il: ilSlug, ilce: ilceSlug }, esc) || await ihaleKutusu(env, { il: ilSlug }, esc)}<h3>${esc(ilce.ad)} ve ${esc(il.ad)} haberleri</h3>${newsList(news.length ? news : await newsAbout(env, [il.ad], 5))}</aside></div>`;
   return html(page({ title: `${ilce.ad} (${il.ad}) mahalleleri, köyleri ve tarla ihaleleri · Topraklık`, description: `${il.ad} ${ilce.ad} ilçesinin ${mahs.length || ""} mahalle ve köyü, haritası, tarım bilgileri ve arazi ihaleleri.`, path: `/il/${ilSlug}/${ilceSlug}`, body, current: "/il" }), 200, 1800);
 }
 
@@ -350,6 +352,7 @@ async function sitemap(env) {
   const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
   const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
   urls.push(...ils.map((i) => [`/il/${i.slug}`, today, "0.7"]));
+  urls.push(...(await ihaleSitemap(env)).map((u) => [u, today, u.includes("/ilan/") ? "0.6" : "0.8"]));
   const ilces = (await env.DB.prepare("SELECT il_id, slug FROM geo_ilce WHERE mah_done = 1").all()).results || [];
   urls.push(...ilces.map((x) => [`/il/${ilSlug[x.il_id]}/${x.slug}`, today, "0.5"]));
   return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([p, d, pr]) => `  <url><loc>${SITE}${p}</loc><lastmod>${d}</lastmod><priority>${pr}</priority></url>`).join("\n")}\n</urlset>`, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
@@ -402,14 +405,16 @@ async function homepage(req, env, originRes) {
   let text = await originRes.text();
   for (const [a, b] of PATCHES) text = text.split(a).join(b);
   originRes = new Response(text, { status: originRes.status, headers: originRes.headers });
-  try { items = await tickerItems(env); news = await latestNews(env, { limit: 6 }); } catch (e) {}
+  let ihl = { rows: [], sayi: {} };
+  try { items = await tickerItems(env); news = await latestNews(env, { limit: 6 }); ihl = await ihaleAnaSayfa(env); } catch (e) {}
   const tk = tickerHtml(items), nb = newsBoxHtml(news);
-  const navLinks = `<li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
+  const ib = ihl.rows.length ? `<section class="tk-news" id="gercek-ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel hazine arazi ihaleleri</h2><div class="sec-sub">Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
+  const navLinks = `<li><a href="/ihaleler">İhaleler</a></li><li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
   const res = new HTMLRewriter()
     .on("head", { element(e) { e.append(INJECT_CSS, { html: true }); } })
     .on("body", { element(e) { if (tk) e.prepend(tk, { html: true }); } })
     .on("header.top .nav ul", { element(e) { e.append(navLinks, { html: true }); } })
-    .on("section#ihaleler", { element(e) { if (nb) e.before(nb, { html: true }); } })
+    .on("section#ihaleler", { element(e) { if (ib) e.before(ib, { html: true }); if (nb) e.before(nb, { html: true }); } })
     .transform(originRes);
   const h = new Headers(res.headers); h.set("cache-control", "public, max-age=300"); h.delete("content-length");
   return new Response(res.body, { status: res.status, headers: h });
@@ -429,6 +434,19 @@ export default {
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/haberler") return newsPage(env, url);
       if (path === "/sitemap.xml") return sitemap(env);
+      if (path === "/topla/milliemlak.js") return new Response(`return (${milliEmlakTopla.toString()})(KEY);`, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store", ...ihaleCors(req) } });
+      if (path === "/admin/ihale-yukle") {
+        const cors = ihaleCors(req);
+        if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+        if (req.method !== "POST" || !env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401, headers: cors });
+        try { return Response.json(await ihaleYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
+      }
+      const ih = path.match(/^\/ihaleler(?:\/([a-z0-9-]+))?(?:\/([a-z0-9-]+))?$/);
+      if (ih) {
+        const ctx = { esc, page, html, IL_URUN: urunleriIl };
+        if (ih[1] === "ilan" && ih[2]) { const r = await ihaleDetay(env, ih[2], ctx); if (r) return r; }
+        else return ihaleListe(env, url, ctx, ih[1] ? { il: ih[1], ...(ih[2] ? { ilce: ih[2] } : {}) } : {});
+      }
       const g = path.match(/^\/il(?:\/([a-z0-9-]+))?(?:\/([a-z0-9-]+))?$/);
       if (g) {
         const r = !g[1] ? await ilIndex(env) : g[2] ? await ilcePage(env, g[1], g[2]) : await ilPage(env, g[1]);
