@@ -127,7 +127,7 @@ export function parselSayfa({ esc, page, html, ARACLAR }) {
 <p class="ps-hata" id="psHata" hidden></p>
 <p class="ps-ipucu">Ada ve parsel tapu senedinde yazar. Numarayı bilmiyorsanız haritada tarlanın üzerine dokunun, parsel bulunur.</p>
 </form>
-<div><div class="ps-harita-kap"><div id="psHarita"></div><div class="ps-arac" id="psArac" hidden><button type="button" id="ps3b" aria-pressed="true">3B</button><button type="button" id="psTur" aria-pressed="false">Drone turu</button><button type="button" id="psKat" aria-pressed="false">Haritaya geç</button></div><div class="ps-bos" id="psBos"><div><b>Türkiye'nin her parseli burada</b>Soldan il, ilçe, mahalle, ada ve parseli seçin ya da haritada yakınlaşıp tarlaya dokunun.</div></div></div>
+<div><div class="ps-harita-kap"><div id="psHarita"></div><div class="ps-arac" id="psArac" style="display:none"><button type="button" id="ps3b" aria-pressed="true">3B</button><button type="button" id="psTur" aria-pressed="false">Drone turu</button><button type="button" id="psKat" aria-pressed="false">Haritaya geç</button></div><div class="ps-bos" id="psBos"><div><b>Türkiye'nin her parseli burada</b>Soldan il, ilçe, mahalle, ada ve parseli seçin ya da haritada yakınlaşıp tarlaya dokunun.</div></div></div>
 <section class="ps-sonuc" id="psSonuc" aria-live="polite"></section></div>
 </div>
 <div class="layout"><article><h2>Parsel sorgulama nasıl yapılır?</h2><ol><li>Tapudaki il, ilçe ve mahalle (köy) adını seçin.</li><li>Tapu senedindeki <b>ada</b> ve <b>parsel</b> numarasını yazın, "Parseli bul"a dokunun.</li><li>Parsel sınırı uyduda ve 3B arazide çizilir; yüzölçümü, niteliği, mevkii, rakımı ve yaklaşık eğimi görünür.</li><li>"Drone turu" ile parselin çevresini kuş bakışı gezin; bağlantıyı paylaşarak başkasına aynı parseli gösterin.</li></ol>
@@ -164,8 +164,8 @@ function harita(){
   map=new maplibregl.Map({container:"psHarita",center:[35.2,39.1],zoom:5,maxPitch:75,attributionControl:{compact:true},
     style:{version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
       sources:{
-        uydu:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19,attribution:"Uydu: Esri, Maxar, Earthstar Geographics"},
-        etiket:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:19},
+        uydu:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:17,attribution:"Uydu: Esri, Maxar, Earthstar Geographics"},
+        etiket:{type:"raster",tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"],tileSize:256,maxzoom:17},
         osm:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,maxzoom:19,attribution:"© OpenStreetMap katkıcıları"},
         dem:{type:"raster-dem",tiles:["https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"],tileSize:256,maxzoom:15,encoding:"terrarium",attribution:"Yükseklik: Mapzen/AWS Terrain Tiles"}},
       layers:[{id:"uydu",type:"raster",source:"uydu"},{id:"osm",type:"raster",source:"osm",layout:{visibility:"none"}},{id:"etiket",type:"raster",source:"etiket",paint:{"raster-opacity":.85}}]}});
@@ -197,7 +197,7 @@ function sonucHtml(d){const m2=alanSayi(d.alan),c=cevre(d.geometry),[lat,lng]=d.
   const baslik=d.il+" "+d.ilce+" "+d.mahalle+" "+d.ada+" ada "+d.parsel+" parsel";
   return '<h2 style="margin:0 0 10px;font-family:Playfair Display,Georgia,serif">'+esc(baslik)+'</h2><div class="ps-kartlar">'
   +'<div class="ps-k"><small>Yüzölçümü</small><b>'+(m2?nf(m2)+" m²":"—")+'</b><span>'+(m2?nf(m2/1000,2)+" dönüm":"")+'</span></div>'
-  +'<div class="ps-k"><small>Nitelik</small><b>'+esc(d.nitelik||"—")+'</b><span>'+esc(d.durum||"")+'</span></div>'
+  +'<div class="ps-k"><small>Nitelik</small><b>'+esc(d.nitelik||"—")+'</b><span>'+esc(/^\d+$/.test(d.durum||"")?"":d.durum||"")+'</span></div>'
   +'<div class="ps-k"><small>Mevkii</small><b>'+esc(d.mevkii||"—")+'</b><span>'+(d.pafta?"Pafta "+esc(d.pafta):"")+'</span></div>'
   +'<div class="ps-k"><small>Çevre uzunluğu</small><b>'+nf(c)+' m</b><span>sınır çiti için</span></div>'
   +'<div class="ps-k" id="psRakim"><small>Rakım</small><b>…</b><span>3B görünümde hesaplanır</span></div><div class="ps-k" id="psEgim"><small>Yaklaşık eğim</small><b>…</b><span></span></div></div>'
@@ -209,7 +209,7 @@ function kml(d){const rs=halkalar(d.geometry).map(r=>"<Polygon><outerBoundaryIs>
   const t='<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>'+esc(d.ada+"-"+d.parsel)+'</name><Placemark><name>'+esc(d.il+" "+d.ilce+" "+d.mahalle+" "+d.ada+"/"+d.parsel)+'</name><description>Topraklık parsel sorgu · topraklik.com</description><Style><LineStyle><color>ff5ac3f2</color><width>3</width></LineStyle><PolyStyle><color>385ac3f2</color></PolyStyle></Style>'+(rs.includes("</Polygon><Polygon>")?"<MultiGeometry>"+rs+"</MultiGeometry>":rs)+'</Placemark></Document></kml>';
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"application/vnd.google-earth.kml+xml"}));a.download="parsel-"+d.ada+"-"+d.parsel+".kml";a.click()}
 async function sorgu(u,noktadan){hata();const b=$("psBtn");b.disabled=true;b.textContent="Aranıyor…";
-  try{const d=await getir(u);son=d;$("psBos").hidden=true;$("psArac").hidden=false;ciz(d);const s=$("psSonuc");s.innerHTML=sonucHtml(d);s.classList.add("acik");
+  try{const d=await getir(u);son=d;$("psBos").style.display="none";$("psArac").style.display="flex";ciz(d);const s=$("psSonuc");s.innerHTML=sonucHtml(d);s.classList.add("acik");
     $("psKopya").onclick=()=>{const l=s.querySelector("a.ana").href.split("text=")[1];navigator.clipboard?.writeText(decodeURIComponent(l).split(": ").pop());$("psKopya").textContent="Kopyalandı ✓"};
     $("psKml").onclick=()=>kml(d);
     history.replaceState(null,"","/parsel-sorgu?il="+slug(d.il)+"&ilce="+slug(d.ilce)+"&mahalle="+slug(d.mahalle)+"&ada="+d.ada+"&parsel="+d.parsel);
