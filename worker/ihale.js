@@ -169,20 +169,22 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
   const ayYil = new Date().toLocaleDateString("tr-TR", { month: "long", year: "numeric", timeZone: "Europe/Istanbul" });
   const TUR_SOZ = { icra: "icradan", sulh: "ortaklığın giderilmesi (sulh hukuk) satışıyla", iflas: "iflastan", mahkeme: "mahkemeden", hazine: "hazineden (Milli Emlak)" };
   const ts = TUR_SOZ[f.tur];
-  const h1 = ts ? `${yer || "Türkiye'de"} ${ts} satılık tarla ve arsalar` : yer ? `${yer} icradan satılık tarla ve arsalar, hazine arazisi ihaleleri` : "İcradan satılık tarla ve arsalar, hazine arazisi ihaleleri";
-  const baslikSeo = ts ? `${h1} (${ayYil})` : yer ? `${yer} icradan satılık tarla ve arsa ilanları (${ayYil})` : `İcradan satılık tarla ve arsa, hazine arazisi ihaleleri (${ayYil})`;
+  const CINS_SOZ = { Tarla: "tarlalar", Arsa: "arsalar", "Bağ-Bahçe": "bağ ve bahçeler", Zeytinlik: "zeytinlikler", Konut: "evler ve daireler", "İşyeri": "işyerleri", Bina: "binalar" };
+  const neler = CINS_SOZ[f.cins] || "tarla, arsa, ev ve işyerleri";
+  const h1 = ts ? `${yer || "Türkiye'de"} ${ts} satılık ${neler}` : yer ? `${yer} icradan satılık ${neler}, hazine ihaleleri` : `İcradan satılık ${neler}, hazine ihaleleri`;
+  const baslikSeo = ts ? `${h1} (${ayYil})` : yer ? `${yer} icradan satılık ${neler} (${ayYil})` : `İcradan satılık ${neler}, hazine arazisi ihaleleri (${ayYil})`;
   const pathBase = sabit.il ? `/ihaleler/${sabit.il}${sabit.ilce ? "/" + sabit.ilce : ""}` : "/ihaleler";
   const qs = (p) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(f)) if (v && !sabit[k] && !(k === "sira" && v === "tarih")) u.set(k, v); if (p > 1) u.set("sayfa", p); const s = u.toString(); return pathBase + (s ? "?" + s : ""); };
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/ihaleler">İhaleler</a>${ilAd ? ` › <a href="/ihaleler/${esc(f.il)}">${esc(ilAd)}</a>` : ""}${ilceAd ? ` › ${esc(ilceAd)}` : ""}</div>
 <h1>${esc(h1)}</h1>
-<p class="lead">İcra ve mahkeme satışlarındaki tarla ve arsalar (ilan.gov.tr) ile Milli Emlak'ın hazine satış ve kiralama ihaleleri her gün güncellenir. Her ilan kaynağına bağlıdır; teklif vermeden önce ilanın aslını ve şartnamesini mutlaka kontrol edin.</p>
+<p class="lead">İcra ve mahkeme satışlarındaki tarla, arsa, ev ve işyerleri (UYAP e-Satış ve ilan.gov.tr) ile Milli Emlak'ın hazine satış ve kiralama ihaleleri her gün güncellenir. Bedel, alan, hisse, KDV ve artırma tarihleri ilanın tam metninden okunur. Her ilan kaynağına bağlıdır; teklif vermeden önce ilanın aslını ve şartnamesini mutlaka kontrol edin.</p>
 ${yer && (topS + topK + topI) ? `<p><b>${esc(yer)}</b> için şu an <b>${nf(topI)}</b> icra ve mahkeme satışı, <b>${nf(topS)}</b> hazine satış ve <b>${nf(topK)}</b> hazine kiralama ilanı var. İlanlar her gün kaynağından kontrol edilir.</p>` : ""}
 <div class="ozet"><span>İcra / mahkeme <b>${nf(topI)}</b></span><span>Hazine satış <b>${nf(topS)}</b></span><span>Hazine kiralama <b>${nf(topK)}</b></span></div>
 ${form}
 ${rows.length ? `<div class="ilist">${rows.map((x) => kart(x, esc)).join("")}</div>` : `<p class="note">${opts.length ? "Bu filtreye uygun güncel ilan yok. Filtreleri genişletin." : "İlanlar ilk kez yükleniyor; kısa süre içinde burada olacak."}</p>`}
 <div class="sayfa">${sayfa > 1 ? `<a class="btn" href="${esc(qs(sayfa - 1))}">← Önceki</a>` : ""}${more ? `<a class="btn" href="${esc(qs(sayfa + 1))}">Sonraki →</a>` : ""}</div>
 <p class="note">İcra ihaleleri UYAP e-Satış üzerinden e-Devlet ile girilerek yapılır. Katılmayı öğrenmek için <a href="/rehber/icra-ihalesine-nasil-girilir">icra ihalesi rehberine</a>, hazine arazisi almak için <a href="/rehber/hazine-arazisi-nasil-alinir">hazine arazisi rehberine</a> bakın.</p>`;
-  const desc = yer ? `${yer} icradan satılık tarla ve arsalar ile Milli Emlak hazine arazi satış ve kiralama ihaleleri: muhammen bedel, satış tarihi, ada parsel.` : "Türkiye genelinde icradan ve mahkemeden satılık tarla ve arsalar ile hazine (Milli Emlak) arazi satış ve kiralama ihaleleri; il ve ilçeye göre arama.";
+  const desc = yer ? `${yer} icradan satılık ${neler} ile Milli Emlak hazine arazi satış ve kiralama ihaleleri: muhammen bedel, satış tarihi, ada parsel.` : "Türkiye genelinde icradan ve mahkemeden satılık tarla, arsa, ev ve işyerleri ile hazine (Milli Emlak) arazi satış ve kiralama ihaleleri; il ve ilçeye göre arama.";
   return html(page({ title: `${baslikSeo} · Topraklık`, description: desc, path: pathBase, body, current: "/ihaleler" }), 200, 900, typeof dbHata !== "undefined");
 }
 

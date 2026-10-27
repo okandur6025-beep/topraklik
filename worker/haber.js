@@ -255,7 +255,7 @@ ${gun.length ? `<aside class="bt-gun"><h3>Bugün 1 dakikada</h3><p class="bt-gun
   const yan = kalan.slice(0, 3); yan.forEach(al);
   if (yan.length === 3) h += `<section class="bt-yanlar">${yan.map((n) => yanKart(n, ctx)).join("")}</section>`; else yan.forEach((n) => kullan.delete(n));
   if (!cat) {
-    h += `<div class="bt-bant">${BANT_IKON}<div><b>Bu haftanın tarla ve arsa ihaleleri</b><span>İcra, sulh hukuk ve Milli Emlak ilanları; il ve ilçeye göre arayın.</span></div><a href="/ihaleler">İhalelere bak →</a></div>`;
+    h += `<div class="bt-bant">${BANT_IKON}<div><b>Güncel arazi ihaleleri</b><span>İcra, sulh hukuk ve Milli Emlak ilanları; il ve ilçeye göre arayın.</span></div><a href="/ihaleler">İhalelere bak →</a></div>`;
     for (const k of ["arazi", "hibe", "piyasa", "gundem"]) {
       const xs = zengin.filter((n) => !kullan.has(n) && n.category === k).slice(0, 6);
       if (!xs.length) continue; xs.forEach(al);
@@ -272,7 +272,7 @@ ${gun.length ? `<aside class="bt-gun"><h3>Bugün 1 dakikada</h3><p class="bt-gun
 }
 
 const KONU_LINK = {
-  arazi: [["/ihaleler", "Güncel tarla ve arsa ihaleleri", "İcra ve Milli Emlak ilanları"], ["/rehber/arsa-alirken-dikkat-edilecekler", "Arsa alırken dikkat edilecekler", "Rehber"], ["/araclar/icra-ihalesi-maliyet-hesaplama", "İhale maliyet hesaplama", "Araç"]],
+  arazi: [["/ihaleler", "Güncel arazi ihaleleri", "İcra ve Milli Emlak ilanları"], ["/rehber/arsa-alirken-dikkat-edilecekler", "Arsa alırken dikkat edilecekler", "Rehber"], ["/araclar/icra-ihalesi-maliyet-hesaplama", "İhale maliyet hesaplama", "Araç"]],
   destek: [["/hibe", "Hibe ve destek rehberi", "Kim, nasıl başvurur?"]],
   fiyat: [["/urun", "Ürün fiyatları ve kazanç", "117 ürün"]],
   tahil: [["/urun/bugday", "Buğday rehberi", "Ekim, verim, kazanç"]],
