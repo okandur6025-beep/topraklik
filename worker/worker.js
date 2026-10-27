@@ -10,6 +10,7 @@ import { bikAdim, bikDetay } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
 import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
+import { SATIS_TURU_SQL } from "./ihale.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
@@ -510,7 +511,7 @@ export default {
         if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401 });
         if (url.pathname === "/admin/probe") { const r = await fetch(url.searchParams.get("u"), { headers: { "user-agent": UA } }); const t = await r.text(); return Response.json({ status: r.status, len: t.length, items: (t.match(/<item[ >]/g) || []).length, head: t.slice(0, 300), props: (t.match(/"properties":\{[^}]*\}/g) || []).slice(0, 4), tail: t.slice(-300) }); }
         if (url.pathname === "/admin/geo") return Response.json(await geoStep(env));
-            if (url.pathname === "/admin/bakim") { const out = []; for (const q of ["CREATE INDEX IF NOT EXISTS geo_mahalle_ilce ON geo_mahalle (ilce_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_il ON geo_ilce (il_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_done ON geo_ilce (mah_done)", "CREATE INDEX IF NOT EXISTS ihale_aktif_bitis ON ihale (aktif, bitis)", "CREATE INDEX IF NOT EXISTS ihale_kaynak_il ON ihale (kaynak, il_slug)", "UPDATE ihale SET bitis = substr(tarih, 1, 10) WHERE bitis IS NULL", "CREATE INDEX IF NOT EXISTS ilce_uretim_slug ON ilce_uretim (slug, yil)"]) { try { await env.DB.prepare(q).run(); out.push("ok: " + q.slice(0, 60)); } catch (e) { out.push("hata: " + e.message.slice(0, 120)); } } return Response.json(out); }
+            if (url.pathname === "/admin/bakim") { const out = []; for (const q of ["CREATE INDEX IF NOT EXISTS geo_mahalle_ilce ON geo_mahalle (ilce_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_il ON geo_ilce (il_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_done ON geo_ilce (mah_done)", "CREATE INDEX IF NOT EXISTS ihale_aktif_bitis ON ihale (aktif, bitis)", "CREATE INDEX IF NOT EXISTS ihale_kaynak_il ON ihale (kaynak, il_slug)", "UPDATE ihale SET bitis = substr(tarih, 1, 10) WHERE bitis IS NULL", "CREATE INDEX IF NOT EXISTS ilce_uretim_slug ON ilce_uretim (slug, yil)", "ALTER TABLE ihale ADD COLUMN satis_turu TEXT", SATIS_TURU_SQL, "CREATE INDEX IF NOT EXISTS ihale_tur ON ihale (satis_turu)"]) { try { await env.DB.prepare(q).run(); out.push("ok: " + q.slice(0, 60)); } catch (e) { out.push("hata: " + e.message.slice(0, 120)); } } return Response.json(out); }
         if (url.pathname === "/admin/onbellek-sil") { const out = {}; for (const u of (url.searchParams.get("u") || "").split(",")) out[u] = await caches.default.delete(new Request(SITE + u)); return Response.json(out); }
         if (url.pathname === "/admin/runs") return Response.json((await env.DB.prepare("SELECT * FROM runs ORDER BY id DESC LIMIT 30").all()).results);
         if (url.pathname === "/admin/uyap") return Response.json(await uyapAdim(env, { IL_AD, slugify, butce: parseInt(url.searchParams.get("n") || "18", 10) }));
