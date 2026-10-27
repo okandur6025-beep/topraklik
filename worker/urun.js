@@ -28,7 +28,9 @@ const trGun = (t) => { const [y, m, g] = String(t).split("-"); return g ? `${+g}
 export function fiyatUygula(u, rows) {
   if (!u.kazanc || !rows?.length) return u;
   const z = { ...u.kazanc, piyasa: [] };
-  const b = rows.find((r) => r.kaynak === "borsa"), h = rows.find((r) => r.kaynak === "hal");
+  const tahmin = typeof u.kazanc.fiyat === "object" ? Object.values(u.kazanc.fiyat)[0] : u.kazanc.fiyat;
+  const makul = (r) => r && r.deger >= tahmin * 0.3 && r.deger <= tahmin * 3.5; // birim farkı veya hatalı kayıt varsa kullanma
+  const b = rows.find((r) => r.kaynak === "borsa" && makul(r)), h = rows.find((r) => r.kaynak === "hal" && r.deger > 0);
   if (b) {
     const borsalar = JSON.parse(b.detay || "[]").slice(0, 3).map((x) => x.b.toLocaleLowerCase("tr").replace(/(^|\s)\S/g, (c) => c.toLocaleUpperCase("tr"))).join(", ");
     z.piyasa.push([`Borsa ortalaması ${trSayi(b.deger)} TL/kg: son 60 günde ${b.islem} kayıt, en son ${trGun(b.tarih)}${borsalar ? " (" + borsalar + ")" : ""}. TOBB ticaret borsaları`, "https://borsa.tobb.org.tr/fiyat_urun_1.php"]);
