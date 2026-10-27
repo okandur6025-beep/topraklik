@@ -17,7 +17,7 @@ function md(t, esc) {
 export function rehberSayfa(slug, { esc, page, html, SITE }, ek = null, onizleme = false) {
   const r = ek || REHBER[slug];
   if (!r) return null;
-  const ilgili = (r.ilgili || []).map((x) => (x.startsWith("/") ? [x, x === "/parsel-sorgu" ? "Parsel sorgulama" : x === "/ihaleler" ? "Güncel ihaleler" : x === "/urun" ? "Ürün rehberleri" : x.startsWith("/araclar/") ? "Hesaplama aracı" : x] : REHBER[x] ? [`/rehber/${x}`, REHBER[x].h1] : [`/rehber/${x}`, x.replace(/-/g, " ")]));
+  const ilgili = (r.ilgili || []).map((x) => (x.startsWith("/") ? [x, x === "/parsel-sorgu" ? "Parsel sorgulama" : x === "/ihaleler" ? "Güncel ihaleler" : x === "/urun" ? "Ürün rehberleri" : x.startsWith("/araclar/") ? "Hesaplama aracı" : x] : REHBER[x] ? [`/rehber/${x}`, REHBER[x].h1] : null)).filter(Boolean);
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/rehber">İhale ve tapu rehberleri</a> › ${esc(r.h1)}</div>
 <div class="layout"><article><h1>${esc(r.h1)}</h1><p class="answer">${esc(r.cevap)}</p>
 ${r.bolumler.map(([b, t]) => `<h2>${esc(b)}</h2>${md(t, esc)}`).join("\n")}

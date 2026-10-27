@@ -1,29 +1,286 @@
 {
-  "aciklama": "SEO ajanının Google'da izlediği aramalar. Her çalışmada 12 tanesi sırayla kontrol edilir. 'sayfa' alanı bu aramada öne çıkmasını istediğimiz Topraklık sayfasıdır.",
+  "aciklama": "SEO ajanının Google'da izlediği aramalar. Her çalışmada 12 tanesi kontrol edilir. 'sayfa' bu aramada öne çıkmasını istediğimiz Topraklık sayfasıdır. 'mevsim' olan aramalar yalnızca o aylarda aranır; ajan bunları ilgili aydan 4–8 hafta önce önceliklendirir (bkz. README, Mevsim kuralı).",
   "aramalar": [
-    { "sorgu": "icradan satılık tarla", "sayfa": "/ihaleler" },
-    { "sorgu": "icradan satılık arsa", "sayfa": "/ihaleler" },
-    { "sorgu": "milli emlak arazi ihalesi", "sayfa": "/ihaleler?kaynak=milliemlak" },
-    { "sorgu": "hazine arazisi satışı", "sayfa": "/rehber/hazine-arazisi-nasil-alinir" },
-    { "sorgu": "hazine arazisi kiralama", "sayfa": "/rehber/hazine-arazisi-kiralama" },
-    { "sorgu": "uyap e-satış tarla", "sayfa": "/ihaleler" },
-    { "sorgu": "icra ihalesine nasıl girilir", "sayfa": "/rehber/icra-ihalesine-nasil-girilir" },
-    { "sorgu": "icra ihalesi masrafları", "sayfa": "/rehber/icra-ihalesi-masraflari" },
-    { "sorgu": "parsel sorgulama 3d", "sayfa": "/parsel-sorgu" },
-    { "sorgu": "ada parsel sorgulama", "sayfa": "/parsel-sorgu" },
-    { "sorgu": "hisseli tapu nedir", "sayfa": "/rehber/hisseli-tapu-nedir" },
-    { "sorgu": "hisseli tarla alınır mı", "sayfa": "/rehber/hisseli-tapu-nedir" },
-    { "sorgu": "tapu harcı hesaplama 2026", "sayfa": "/araclar/tapu-harci-hesaplama" },
-    { "sorgu": "dönüm metrekare hesaplama", "sayfa": "/araclar/donum-metrekare-cevirme" },
-    { "sorgu": "tarlaya ev yapılır mı", "sayfa": "/rehber/tarlaya-ev-yapilir-mi" },
-    { "sorgu": "tarla imara nasıl açılır", "sayfa": "/rehber/tarla-imara-nasil-acilir" },
-    { "sorgu": "ortaklığın giderilmesi satışı", "sayfa": "/rehber/ortakligin-giderilmesi-davasi" },
-    { "sorgu": "5403 tarım arazisi bölünme", "sayfa": "/rehber/tarim-arazisi-bolunme-5403" },
-    { "sorgu": "polatlı icradan satılık tarla", "sayfa": "/il/ankara/polatli" },
-    { "sorgu": "konya icradan satılık tarla", "sayfa": "/ihaleler/konya" },
-    { "sorgu": "beyşehir satılık tarla", "sayfa": "/il/konya/beysehir" },
-    { "sorgu": "dekar başına buğday kazancı", "sayfa": "/urun/bugday" },
-    { "sorgu": "tarlaya ne ekilir en karlı", "sayfa": "/urun" },
-    { "sorgu": "tarım hibe destekleri 2026", "sayfa": "/hibe" }
+    {
+      "sorgu": "icradan satılık tarla",
+      "sayfa": "/ihaleler"
+    },
+    {
+      "sorgu": "icradan satılık arsa",
+      "sayfa": "/ihaleler"
+    },
+    {
+      "sorgu": "milli emlak arazi ihalesi",
+      "sayfa": "/ihaleler?kaynak=milliemlak"
+    },
+    {
+      "sorgu": "hazine arazisi satışı",
+      "sayfa": "/rehber/hazine-arazisi-nasil-alinir"
+    },
+    {
+      "sorgu": "hazine arazisi kiralama",
+      "sayfa": "/rehber/hazine-arazisi-kiralama"
+    },
+    {
+      "sorgu": "uyap e-satış tarla",
+      "sayfa": "/ihaleler"
+    },
+    {
+      "sorgu": "icra ihalesine nasıl girilir",
+      "sayfa": "/rehber/icra-ihalesine-nasil-girilir"
+    },
+    {
+      "sorgu": "icra ihalesi masrafları",
+      "sayfa": "/rehber/icra-ihalesi-masraflari"
+    },
+    {
+      "sorgu": "parsel sorgulama 3d",
+      "sayfa": "/parsel-sorgu"
+    },
+    {
+      "sorgu": "ada parsel sorgulama",
+      "sayfa": "/parsel-sorgu"
+    },
+    {
+      "sorgu": "hisseli tapu nedir",
+      "sayfa": "/rehber/hisseli-tapu-nedir"
+    },
+    {
+      "sorgu": "hisseli tarla alınır mı",
+      "sayfa": "/rehber/hisseli-tapu-nedir"
+    },
+    {
+      "sorgu": "tapu harcı hesaplama 2026",
+      "sayfa": "/araclar/tapu-harci-hesaplama"
+    },
+    {
+      "sorgu": "dönüm metrekare hesaplama",
+      "sayfa": "/araclar/donum-metrekare-cevirme"
+    },
+    {
+      "sorgu": "tarlaya ev yapılır mı",
+      "sayfa": "/rehber/tarlaya-ev-yapilir-mi"
+    },
+    {
+      "sorgu": "tarla imara nasıl açılır",
+      "sayfa": "/rehber/tarla-imara-nasil-acilir"
+    },
+    {
+      "sorgu": "ortaklığın giderilmesi satışı",
+      "sayfa": "/rehber/ortakligin-giderilmesi-davasi"
+    },
+    {
+      "sorgu": "5403 tarım arazisi bölünme",
+      "sayfa": "/rehber/tarim-arazisi-bolunme-5403"
+    },
+    {
+      "sorgu": "polatlı icradan satılık tarla",
+      "sayfa": "/il/ankara/polatli"
+    },
+    {
+      "sorgu": "konya icradan satılık tarla",
+      "sayfa": "/ihaleler/konya"
+    },
+    {
+      "sorgu": "beyşehir satılık tarla",
+      "sayfa": "/il/konya/beysehir"
+    },
+    {
+      "sorgu": "dekar başına buğday kazancı",
+      "sayfa": "/urun/bugday"
+    },
+    {
+      "sorgu": "tarlaya ne ekilir en karlı",
+      "sayfa": "/urun"
+    },
+    {
+      "sorgu": "tarım hibe destekleri 2026",
+      "sayfa": "/hibe"
+    },
+    {
+      "sorgu": "buğday ne zaman ekilir",
+      "sayfa": "/urun/bugday",
+      "mevsim": [
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "sorgu": "arpa ekim zamanı",
+      "sayfa": "/urun/arpa",
+      "mevsim": [
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "sorgu": "kışlık mercimek ekimi",
+      "sayfa": "/urun/kirmizi-mercimek",
+      "mevsim": [
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "sorgu": "kanola ekim zamanı",
+      "sayfa": "/urun/kanola",
+      "mevsim": [
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "sorgu": "fiğ ekimi ne zaman",
+      "sayfa": "/urun/fig",
+      "mevsim": [
+        8,
+        9,
+        10,
+        2,
+        3
+      ]
+    },
+    {
+      "sorgu": "sarımsak ne zaman ekilir",
+      "sayfa": "/urun/sarimsak",
+      "mevsim": [
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "sorgu": "zeytin hasadı ne zaman",
+      "sayfa": "/urun/zeytin",
+      "mevsim": [
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "sorgu": "ceviz fidanı dikimi",
+      "sayfa": "/urun/ceviz",
+      "mevsim": [
+        10,
+        11,
+        12,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "sorgu": "lavanta dikimi ne zaman",
+      "sayfa": "/urun/lavanta",
+      "mevsim": [
+        9,
+        10,
+        11,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "sorgu": "nohut ne zaman ekilir",
+      "sayfa": "/urun/nohut",
+      "mevsim": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "sorgu": "patates ekim zamanı",
+      "sayfa": "/urun/patates",
+      "mevsim": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    {
+      "sorgu": "ayçiçeği ekim zamanı",
+      "sayfa": "/urun/aycicegi",
+      "mevsim": [
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "sorgu": "mısır ekim zamanı",
+      "sayfa": "/urun/misir",
+      "mevsim": [
+        3,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "sorgu": "yonca ekimi ne zaman",
+      "sayfa": "/urun/yonca",
+      "mevsim": [
+        2,
+        3,
+        4,
+        8,
+        9
+      ]
+    },
+    {
+      "sorgu": "fındık hasadı ne zaman",
+      "sayfa": "/urun/findik",
+      "mevsim": [
+        6,
+        7,
+        8
+      ]
+    },
+    {
+      "sorgu": "çilek fidesi dikimi",
+      "sayfa": "/urun/cilek",
+      "mevsim": [
+        7,
+        8,
+        9,
+        2,
+        3
+      ]
+    },
+    {
+      "sorgu": "tarla kiralama sözleşmesi",
+      "sayfa": "/rehber/tarla-kiralama-sozlesmesi",
+      "mevsim": [
+        7,
+        8,
+        9,
+        10
+      ]
+    },
+    {
+      "sorgu": "bu hafta icra ihaleleri",
+      "sayfa": "/ihaleler/bu-hafta"
+    },
+    {
+      "sorgu": "kasım 2026 icra ihaleleri",
+      "sayfa": "/ihaleler/takvim/2026-11",
+      "mevsim": [
+        10,
+        11
+      ]
+    }
   ]
 }

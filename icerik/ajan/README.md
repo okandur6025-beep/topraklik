@@ -13,13 +13,17 @@ Taslaklar **asla doğrudan yayına girmez**: site sahibi panelden (topraklik.com
 - Var olan içerik: `worker/rehberler.json` (yayındaki rehberler, `slug` ve `h1`), `icerik/ajan/taslaklar/` (önceki taslaklar). Aynı konuda ikinci içerik yazma.
 
 ### 2. Google görünürlüğü (12 arama)
-- `hedefler.json` içinden, önceki raporda kontrol edilmemiş olanlardan başlayarak sırayla 12 arama seç.
+- `hedefler.json` içinden 12 arama seç. Önce **mevsim kuralına** uyan aramalar (aşağıda), sonra önceki raporda kontrol edilmemiş olanlar sırayla.
+- **Mevsim kuralı:** `mevsim` alanı olan bir arama, ancak listedeki aylardan biri bugünden itibaren **0–8 hafta** içindeyse seçilir. Bu aramalar en fazla 6 tane olur; geri kalanı genel aramalardır. Mevsimi geçmiş ya da 8 haftadan uzak aramaları bu çalışmada atla.
+- Takvim aramalarında (ör. "kasım 2026 icra ihaleleri") yılı ve ayı güncel tut: ay geçtiyse raporda `oneriler` içine "hedefler.json'daki X araması bir sonraki aya taşınmalı" diye yaz (dosyayı kendin değiştirme).
 - Her biri için web araması yap (Türkçe, Türkiye). İlk 10 sonuçta `topraklik.com` var mı, kaçıncı sırada, hangi adresle?
 - İlk 3 sonucun başlığını ve adresini kaydet (rakip analizi için).
 - Uydurma sıra yazma: sonuçlarda göremediysen `"sira": null`.
 
 ### 3. İçerik taslakları (en fazla 2)
 - Görünürlükte geride kaldığımız ya da sitede hiç karşılığı olmayan, gerçekten aranan bir konu seç (arsa, tarla, tapu, icra/hazine ihalesi, tarım arazisi mevzuatı, çiftçilik kararları).
+- **Öncelik sırası:** (1) sitede bağlantı verilen ama var olmayan rehberler (kırık iç bağlantı), (2) önümüzdeki 4–8 haftada aranacak mevsimlik konular (ekim, dikim, hasat, kiralama dönemi, destek başvuru takvimi), (3) diğer konular. Mevsimlik bir konu ürün sayfasıyla örtüşüyorsa yeni rehber yazma; bunun yerine `oneriler` içine o ürün sayfasında neyin eksik olduğunu yaz.
+- Mevsimlik taslakta tarihleri bölgeye göre ver (ör. "Orta Anadolu'da ekim ayı ortası, Güneydoğu'da kasım"), tek bir kesin gün yazma; kaynağı Tarım ve Orman Bakanlığı ya da TAGEM/araştırma enstitüleri olsun.
 - Rakiplerin ilk sayfadaki içeriğinden **daha faydalı, daha doğru ve daha güncel** bir rehber yaz. Kopyalama yok; kendi cümlelerinle.
 - **Doğruluk:** Her rakam, oran, süre ve kanun maddesi resmî kaynaktan doğrulanmalı (mevzuat.gov.tr, resmigazete.gov.tr, tkgm.gov.tr, gib.gov.tr, tarimorman.gov.tr, milliemlak.gov.tr, uyap.gov.tr, tuik.gov.tr). Doğrulayamadığın bilgiyi yazma. Kaynakları `kaynak` alanına ekle.
 - **Dil:** Türkçe, sade, yazım ve ek uyumu hatasız. Tıklama tuzağı, abartı, "kaçırmayın" gibi satış dili yok. Hukuki konularda "avukata/ilgili kuruma danışın" notu.

@@ -63,7 +63,9 @@ export async function seoDenetim(env, isle) {
   for (const y of yollar) { const g = await getir(y); sayfalar.push(incele(y, g.html, g.durum)); }
   /* iç bağlantılar: örnek sayfalardaki benzersiz bağlantıların bir kısmı kontrol edilir */
   const tum = [...new Set(sayfalar.flatMap((s) => s.linkler))].filter((u) => !yollar.includes(u));
-  const ornek = tum.sort(() => Math.random() - 0.5).slice(0, 60);
+  /* rehber ve araç bağlantılarının hepsi, kalan kotaya rastgele diğerleri */
+  const oncelik = tum.filter((u) => /^\/(rehber|araclar)\//.test(u));
+  const ornek = [...oncelik, ...tum.filter((u) => !oncelik.includes(u)).sort(() => Math.random() - 0.5)].slice(0, Math.max(60, oncelik.length));
   const kirik = [];
   for (const u of ornek) { const g = await getir(u); if (g.durum >= 400 || g.durum === 0) kirik.push({ yol: u, durum: g.durum, kaynak: sayfalar.find((s) => s.linkler.includes(u))?.yol }); }
   /* tekrar eden başlıklar */
