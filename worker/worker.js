@@ -147,7 +147,10 @@ async function geoStep(env) {
 }
 
 const NEWS_COLS = "id, title, source, url, published_at, category, ozet, onem, konu";
-async function latestNews(env, { cat, limit = 30, offset = 0 } = {}) {
+async function latestNews(env, o = {}) {
+  try { return await latestNews0(env, o); } catch (e) { if (!/no such column/i.test(e.message)) throw e; await haberSema(env); return latestNews0(env, o); }
+}
+async function latestNews0(env, { cat, limit = 30, offset = 0 } = {}) {
   const q = cat
     ? env.DB.prepare(`SELECT ${NEWS_COLS} FROM news WHERE category = ?1 AND (alakali IS NULL OR alakali = 1) ORDER BY published_at DESC LIMIT ?2 OFFSET ?3`).bind(cat, limit, offset)
     : env.DB.prepare(`SELECT ${NEWS_COLS} FROM news WHERE (alakali IS NULL OR alakali = 1) ORDER BY published_at DESC LIMIT ?1 OFFSET ?2`).bind(limit, offset);

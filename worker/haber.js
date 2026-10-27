@@ -100,7 +100,10 @@ export async function haberSema(env) {
 /* Cron: son 5 günün işlenmemiş haberlerinden en yenileri */
 export async function haberAdim(env, adet = 2) {
   if (!env.AI) return ["AI bağlı değil"];
-  const rows = (await env.DB.prepare("SELECT id, title, url, source, summary, published_at FROM news WHERE islendi IS NULL AND published_at > ?1 ORDER BY published_at DESC LIMIT ?2").bind(new Date(Date.now() - 5 * 864e5).toISOString(), adet).all()).results || [];
+  const sec = () => env.DB.prepare("SELECT id, title, url, source, summary, published_at FROM news WHERE islendi IS NULL AND published_at > ?1 ORDER BY published_at DESC LIMIT ?2").bind(new Date(Date.now() - 5 * 864e5).toISOString(), adet).all();
+  let res;
+  try { res = await sec(); } catch (e) { if (!/no such column/i.test(e.message)) throw e; await haberSema(env); res = await sec(); }
+  const rows = res.results || [];
   const log = [];
   for (const n of rows) {
     try {
