@@ -241,6 +241,16 @@ ${mobilAlt(path.split("?")[0])}
 </body></html>`;
 }
 
+/* Yönetim yetkisi: ADMIN_KEY ya da geçici anahtarın SHA-256 özeti (anahtar depoda değil) */
+const GECICI_OZET = "416739558125e21018736f34d439540cecf3356040757e8020e9ae59ee949d14";
+async function yetkili(req, env) {
+  const k = req.headers.get("x-admin-key") || "";
+  if (!k) return false;
+  if (env.ADMIN_KEY && k === env.ADMIN_KEY) return true;
+  if (!GECICI_OZET) return false;
+  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(k));
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("") === GECICI_OZET;
+}
 const html = (s, status = 200, cache = 300, gecici = false) => new Response(s, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": `public, max-age=${cache}`, "x-tk": gecici ? "gecici" : "1" } });
 
 function newsList(rows) {
@@ -524,13 +534,13 @@ export default {
       if (path === "/admin/ilce-uretim") {
         const o = req.headers.get("origin") || "", cors = o === "https://biruni.tuik.gov.tr" ? { "access-control-allow-origin": o, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type, x-admin-key" } : {};
         if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-        if (req.method !== "POST" || !env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401, headers: cors });
+        if (req.method !== "POST" || !(await yetkili(req, env))) return new Response("yetkisiz", { status: 401, headers: cors });
         try { return Response.json(await ilceYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
       }
       if (path === "/admin/ihale-yukle") {
         const cors = ihaleCors(req);
         if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-        if (req.method !== "POST" || !env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401, headers: cors });
+        if (req.method !== "POST" || !(await yetkili(req, env))) return new Response("yetkisiz", { status: 401, headers: cors });
         try { return Response.json(await ihaleYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
       }
       if (path === "/hakkimizda") return html(page({ title: "Hakkımızda · Topraklık", description: "Topraklık; icra ve hazine arazi ihalelerini, parsel bilgisini, tarım rehberlerini ve piyasa fiyatlarını tek yerde toplayan bağımsız bir platformdur.", path: "/hakkimizda", body: HAKKIMIZDA, current: "" }), 200, 86400);
@@ -559,7 +569,7 @@ export default {
         return html(page({ title: "Sayfa bulunamadı · Topraklık", description: "", path, body: `<h1>Sayfa bulunamadı</h1><p class="lead">Aradığınız sayfa taşınmış ya da henüz yayında değil.</p><p><a href="/${m[1]}">${esc(SECTIONS[m[1]].name)} →</a></p>` }), 404, 60);
       }
       if (url.pathname.startsWith("/admin/")) {
-        if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401 });
+        if (!(await yetkili(req, env))) return new Response("yetkisiz", { status: 401 });
         if (url.pathname === "/admin/probe") { const r = await fetch(url.searchParams.get("u"), { headers: { "user-agent": UA } }); const t = await r.text(); return Response.json({ status: r.status, len: t.length, items: (t.match(/<item[ >]/g) || []).length, head: t.slice(0, 300), props: (t.match(/"properties":\{[^}]*\}/g) || []).slice(0, 4), tail: t.slice(-300) }); }
         if (url.pathname === "/admin/geo") return Response.json(await geoStep(env));
             if (url.pathname === "/admin/bakim") { const out = []; for (const q of ["CREATE INDEX IF NOT EXISTS geo_mahalle_ilce ON geo_mahalle (ilce_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_il ON geo_ilce (il_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_done ON geo_ilce (mah_done)", "CREATE INDEX IF NOT EXISTS ihale_aktif_bitis ON ihale (aktif, bitis)", "CREATE INDEX IF NOT EXISTS ihale_kaynak_il ON ihale (kaynak, il_slug)", "UPDATE ihale SET bitis = substr(tarih, 1, 10) WHERE bitis IS NULL", "CREATE INDEX IF NOT EXISTS ilce_uretim_slug ON ilce_uretim (slug, yil)", "ALTER TABLE ihale ADD COLUMN satis_turu TEXT", SATIS_TURU_SQL, "CREATE INDEX IF NOT EXISTS ihale_tur ON ihale (satis_turu)"]) { try { await env.DB.prepare(q).run(); out.push("ok: " + q.slice(0, 60)); } catch (e) { out.push("hata: " + e.message.slice(0, 120)); } } return Response.json(out); }
@@ -588,10 +598,12 @@ export default {
       const gm = min % 1440; // UTC günün dakikası; 241–246 = İstanbul 07:01–07:06
       if (gm >= 60 && gm <= 99) { try { await bikAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'bik', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (gm >= 241 && gm <= 246) { try { await fiyatAdim(env, gm - 241); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'fiyat', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
-      if (min % 30 === 0) await collectNews(env, Math.floor(min / 30));
-      else if (min % 4 === 1) { try { await uyapAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'uyap', ?2)").bind(new Date().toISOString(), e.message).run(); } }
-      else if (min % 5 === 3) { try { await haberAdim(env, 2); } catch (e) {} }
-      else if (min % 10 === 2) { try { await geoStep(env); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'geo', ?2)").bind(new Date().toISOString(), e.message).run(); } }
+      const kaydet = (job, e) => env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, ?2, ?3)").bind(new Date().toISOString(), job, String(e.message || e).slice(0, 500)).run().catch(() => {});
+      /* Workers Paid: işler aynı turda birlikte çalışabilir */
+      if (min % 30 === 0) { try { await collectNews(env, Math.floor(min / 30)); } catch (e) { await kaydet("news", e); } }
+      if (min % 2 === 1) { try { await uyapAdim(env, { IL_AD, slugify, butce: 120 }); } catch (e) { await kaydet("uyap", e); } }
+      if (min % 4 === 2) { try { await haberAdim(env, 3); } catch (e) { await kaydet("haber", e); } }
+      if (min % 10 === 4) { try { await geoStep(env); } catch (e) { await kaydet("geo", e); } }
     })());
   },
 };
