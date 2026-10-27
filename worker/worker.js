@@ -12,6 +12,7 @@ import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
 import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { SATIS_TURU_SQL } from "./ihale.js";
+import { MOBIL_CSS, MOBIL_META, mobilAlt, GERI_BTN, MANIFEST } from "./mobil.js";
 import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
@@ -224,17 +225,18 @@ const NAV = [["/", "Ana sayfa"], ["/ihaleler", "İhaleler"], ["/araclar", "Araç
 
 function page({ title, description, path, body, current, jsonld, noindex }) {
   const url = SITE + path;
-  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}"><link rel="canonical" href="${url}">${noindex ? '<meta name="robots" content="noindex">' : ""}
 <meta property="og:type" content="website"><meta property="og:site_name" content="Topraklık"><meta property="og:locale" content="tr_TR">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">${MOBIL_META}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
-<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
-<header class="top"><div class="wrap"><a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
+<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
+<header class="top"><div class="wrap">${GERI_BTN}<a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
 <footer><div class="wrap"><span>© ${new Date().getFullYear()} Topraklık · Toprağa dair ne varsa.</span><span><a href="/hakkimizda">Hakkımızda</a> · <a href="/iletisim">İletişim</a> · <a href="/yasal">Yasal bilgiler</a> · <a href="mailto:info@topraklik.com">info@topraklik.com</a></span></div></footer>
+${mobilAlt(path.split("?")[0])}
 </body></html>`;
 }
 
@@ -450,8 +452,8 @@ async function homepage(req, env, originRes) {
   const ib = ihl.rows.length ? `<section class="tk-news" id="ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel tarla ve arsa ihaleleri</h2><div class="sec-sub">İcradan ve mahkemeden satılık ${(ihl.sayi.icra || 0).toLocaleString("tr-TR")} tarla ve arsa, Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
   const navLinks = `<li><a href="/ihaleler">İhaleler</a></li><li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
   const res = new HTMLRewriter()
-    .on("head", { element(e) { e.append(INJECT_CSS, { html: true }); } })
-    .on("body", { element(e) { if (tk) e.prepend(tk, { html: true }); } })
+    .on("head", { element(e) { e.append(INJECT_CSS + MOBIL_META + `<style>${MOBIL_CSS}</style>`, { html: true }); } })
+    .on("body", { element(e) { if (tk) e.prepend(tk, { html: true }); e.append(mobilAlt("/"), { html: true }); } })
     .on("header.top .nav ul", { element(e) { e.append(navLinks, { html: true }); } })
     .on("section#ihaleler", { element(e) { e.setAttribute("id", "ihaleler-ornek"); if (ib) e.before(ib, { html: true }); if (nb) e.before(nb, { html: true }); } })
     .transform(originRes);
@@ -513,6 +515,7 @@ export default {
     try {
       if (path === "/api/haberler") { try { return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
+      if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=86400" } });
       if (path === "/haberler") return newsPage(env, url);
       { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }
       if (path === "/sitemap.xml") return sitemap(env);
