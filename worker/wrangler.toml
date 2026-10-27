@@ -19,3 +19,6 @@ TICKER_AUTO = "0"
 enabled = true
 
 # ADMIN_KEY gizli anahtardır; burada DEĞİL, Cloudflare'de "secret" olarak durur.
+
+[ai]
+binding = "AI"

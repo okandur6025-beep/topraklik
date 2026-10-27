@@ -12,6 +12,7 @@ import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
 import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { SATIS_TURU_SQL } from "./ihale.js";
+import { haberAdim, haberSema, haberYaz, haberKart, haberOne, haberBasliklar, haberDetay, haberGorsel, HABER_CSS } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
@@ -67,7 +68,8 @@ export function parseRss(xml) {
     try { const u = new URL(link); if (u.hostname.endsWith("bing.com") && u.searchParams.get("url")) link = u.searchParams.get("url"); } catch {}
     const pub = g("pubDate");
     if (!title || !link) continue;
-    items.push({ title, source: source || "Kaynak", url: link, published_at: new Date(pub || Date.now()).toISOString() });
+    const desc = strip(g("description")).slice(0, 600);
+    items.push({ title, source: source || "Kaynak", url: link, desc, published_at: new Date(pub || Date.now()).toISOString() });
   }
   return items;
 }
@@ -92,8 +94,8 @@ async function collectNews(env, slot = 0, perRun = 2) {
       let added = 0;
       for (let i = 0; i < items.length; i += 12) {
         const chunk = items.slice(i, i + 12);
-        const sql = "INSERT OR IGNORE INTO news (id, title, source, url, published_at, category, created_at) VALUES " + chunk.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ");
-        const args = chunk.flatMap((it) => [fnv(normTitle(it.title)), it.title.slice(0, 300), it.source.slice(0, 120), it.url, it.published_at, f.cat, now]);
+        const sql = "INSERT OR IGNORE INTO news (id, title, source, url, published_at, category, created_at, summary) VALUES " + chunk.map(() => "(?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+        const args = chunk.flatMap((it) => [fnv(normTitle(it.title)), it.title.slice(0, 300), it.source.slice(0, 120), it.url, it.published_at, f.cat, now, it.desc || null]);
         const res = await env.DB.prepare(sql).bind(...args).run();
         added += res.meta?.changes || 0;
       }
@@ -144,10 +146,11 @@ async function geoStep(env) {
   return `${ilce.ad}: ${mahs.length} mahalle`;
 }
 
+const NEWS_COLS = "id, title, source, url, published_at, category, ozet, onem, konu";
 async function latestNews(env, { cat, limit = 30, offset = 0 } = {}) {
   const q = cat
-    ? env.DB.prepare("SELECT * FROM news WHERE category = ?1 ORDER BY published_at DESC LIMIT ?2 OFFSET ?3").bind(cat, limit, offset)
-    : env.DB.prepare("SELECT * FROM news ORDER BY published_at DESC LIMIT ?1 OFFSET ?2").bind(limit, offset);
+    ? env.DB.prepare(`SELECT ${NEWS_COLS} FROM news WHERE category = ?1 AND (alakali IS NULL OR alakali = 1) ORDER BY published_at DESC LIMIT ?2 OFFSET ?3`).bind(cat, limit, offset)
+    : env.DB.prepare(`SELECT ${NEWS_COLS} FROM news WHERE (alakali IS NULL OR alakali = 1) ORDER BY published_at DESC LIMIT ?1 OFFSET ?2`).bind(limit, offset);
   return (await q.all()).results || [];
 }
 
@@ -216,7 +219,7 @@ function page({ title, description, path, body, current, jsonld, noindex }) {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
-<style>${CSS}${URUN_CSS}${IHALE_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
+<style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
 <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
@@ -228,7 +231,7 @@ const html = (s, status = 200, cache = 300, gecici = false) => new Response(s, {
 
 function newsList(rows) {
   if (!rows.length) return `<p class="note">Haberler toplanıyor, birkaç dakika içinde burada olacak.</p>`;
-  return `<div class="news">${rows.map((n) => `<div class="ni"><a href="${esc(n.url)}" target="_blank" rel="noopener nofollow">${esc(n.title)}</a><div class="meta"><span class="tag">${esc(CATS[n.category] || n.category)}</span>${esc(n.source)} · ${esc(ago(n.published_at))}</div></div>`).join("")}</div>`;
+  return `<div class="news">${rows.map((n) => `<div class="ni"><a href="${esc(n.ozet ? "/haberler/" + n.id : n.url)}"${n.ozet ? "" : ' target="_blank" rel="noopener nofollow"'}>${esc(n.title)}</a><div class="meta"><span class="tag">${esc(CATS[n.category] || n.category)}</span>${esc(n.source)} · ${esc(ago(n.published_at))}</div></div>`).join("")}</div>`;
 }
 
 async function newsPage(env, url) {
@@ -237,9 +240,14 @@ async function newsPage(env, url) {
   const rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 });
   const tabs = `<nav class="tabs" aria-label="Kategoriler"><a href="/haberler"${!cat ? ' aria-current="page"' : ""}>Tümü</a>${Object.entries(CATS).map(([k, v]) => `<a href="/haberler?kategori=${k}"${cat === k ? ' aria-current="page"' : ""}>${v}</a>`).join("")}</nav>`;
   const more = rows.length === 40 ? `<p><a href="/haberler?${cat ? `kategori=${cat}&` : ""}sayfa=${p + 1}">Daha eski haberler →</a></p>` : "";
-  const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Haberler</div><h1>Tarım haberleri</h1>
-<p class="lead">Tarım, hibe, fiyat ve arazi gündemi her 2 saatte bir güncellenir. Haberin tamamı için başlığa tıklayın; kaynak sitesinde açılır.</p>${tabs}${newsList(rows)}${more}`;
-  return html(page({ title: `${cat ? CATS[cat] + " haberleri" : "Tarım haberleri"} · Topraklık`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri tek sayfada.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600);
+  const ctx = { esc, ago, CATS };
+  const zengin = rows.filter((n) => n.ozet), yalin = rows.filter((n) => !n.ozet);
+  const one = p === 1 && zengin.length > 3 ? zengin.find((n) => n.onem && ["arazi", "destek", "fiyat"].includes(n.category)) || zengin[0] : null;
+  const kartlar = zengin.filter((n) => n !== one);
+  const govde = !rows.length ? newsList([]) : `${one ? haberOne(one, ctx) : ""}${kartlar.length ? `<div class="hb-grid">${kartlar.map((n) => haberKart(n, ctx)).join("")}</div>` : ""}${yalin.length ? `<h2>${zengin.length ? "Diğer başlıklar" : "Son başlıklar"}</h2>${haberBasliklar(yalin, ctx)}` : ""}`;
+  const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Haberler</div><h1>${cat ? esc(CATS[cat]) + " haberleri" : "Tarım ve arazi haberleri"}</h1>
+<p class="lead">Gündemi sizin için süzüyoruz: her haberin kısa özeti ve çiftçi, üretici ya da arazi sahibi için neden önemli olduğu. Haberin tamamına kaynağından ulaşabilirsiniz.</p>${tabs}${govde}${more}`;
+  return html(page({ title: `${cat ? CATS[cat] + " haberleri" : "Tarım ve arazi haberleri, özetler"} · Topraklık`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600);
 }
 
 const URUN_KAT = ["Tahıllar", "Baklagiller", "Yağlı tohumlar", "Endüstri bitkileri", "Yem bitkileri", "Sebzeler", "Meyveler", "Sert kabuklular", "Tıbbi ve aromatik bitkiler", "Yeni ve alternatif ürünler"];
@@ -362,6 +370,7 @@ async function sitemap(env) {
     ...REHBER_LISTE.map((r) => [`/rehber/${r.slug}`, today, "0.8"]),
     ["/araclar", today, "0.8"], ["/hakkimizda", today, "0.3"], ["/iletisim", today, "0.3"], ["/parsel-sorgu", today, "0.9"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
     ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
+  try { urls.push(...((await env.DB.prepare("SELECT id, published_at FROM news WHERE alakali = 1 AND ozet IS NOT NULL ORDER BY published_at DESC LIMIT 300").all()).results || []).map((n) => [`/haberler/${n.id}`, n.published_at.slice(0, 10), "0.5"])); } catch (e) {}
   const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
   const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
   urls.push(...ils.map((i) => [`/il/${i.slug}`, today, "0.7"]));
@@ -395,6 +404,7 @@ const INJECT_CSS = `<style>
 .tk-news .tk-meta{font-size:12.5px;color:var(--muted,#6C6858);margin-top:auto}
 .tk-news .tk-cat{font-size:11.5px;font-weight:800;color:var(--green,#2E5130);letter-spacing:.04em;text-transform:uppercase}
 @media (max-width:900px){.tk-news .tk-grid{grid-template-columns:1fr 1fr}}@media (max-width:560px){.tk-news .tk-grid{grid-template-columns:1fr}}
+${HABER_CSS}
 </style>`;
 
 function tickerHtml(items) {
@@ -407,8 +417,10 @@ function tickerHtml(items) {
 
 function newsBoxHtml(rows) {
   if (!rows.length) return "";
-  return `<section class="tk-news" id="haberler-kutu"><div class="wrap"><div class="sec-head"><div><h2 class="sec-title">Tarımda bugün</h2><p class="sec-sub">Tarım, hibe, fiyat ve arazi gündemi · her 2 saatte güncellenir</p></div><a class="btn btn-line" href="/haberler">Tüm haberler →</a></div>
-<div class="tk-grid">${rows.map((n) => `<div class="tk-item"><span class="tk-cat">${esc(CATS[n.category] || "")}</span><a href="${esc(n.url)}" target="_blank" rel="noopener nofollow">${esc(n.title)}</a><span class="tk-meta">${esc(n.source)} · ${esc(ago(n.published_at))}</span></div>`).join("")}</div></div></section>`;
+  const ctx = { esc, ago, CATS };
+  const sec = [...rows.filter((n) => n.ozet), ...rows.filter((n) => !n.ozet)].slice(0, 3);
+  return `<section class="tk-news" id="haberler-kutu"><div class="wrap"><div class="sec-head"><div><h2 class="sec-title">Tarımda bugün</h2><p class="sec-sub">Günün tarım, hibe, fiyat ve arazi haberleri; kısa özet ve neden önemli olduğu</p></div><a class="btn btn-line" href="/haberler">Tüm haberler →</a></div>
+<div class="hb-grid">${sec.map((n) => haberKart(n, ctx)).join("")}</div></div></section>`;
 }
 
 // Site yeniden yüklenene kadar ana sayfa koduna uygulanan küçük düzeltmeler
@@ -420,7 +432,7 @@ async function homepage(req, env, originRes) {
   for (const [a, b] of PATCHES) text = text.split(a).join(b);
   originRes = new Response(text, { status: originRes.status, headers: originRes.headers });
   let ihl = { rows: [], sayi: {} };
-  try { items = await tickerItems(env); news = await latestNews(env, { limit: 6 }); ihl = await ihaleAnaSayfa(env); } catch (e) {}
+  try { items = await tickerItems(env); news = await latestNews(env, { limit: 12 }); ihl = await ihaleAnaSayfa(env); } catch (e) {}
   const tk = tickerHtml(items), nb = newsBoxHtml(news);
   const ib = ihl.rows.length ? `<section class="tk-news" id="ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel tarla ve arsa ihaleleri</h2><div class="sec-sub">İcradan ve mahkemeden satılık ${(ihl.sayi.icra || 0).toLocaleString("tr-TR")} tarla ve arsa, Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
   const navLinks = `<li><a href="/ihaleler">İhaleler</a></li><li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
@@ -454,6 +466,7 @@ const ILETISIM = `<div class="crumb"><a href="/">Ana sayfa</a> › İletişim</d
 function onbellekSuresi(path) {
   if (path === "/") return 600;
   if (path === "/sitemap.xml") return 21600;
+  if (path.startsWith("/haberler/")) return 21600;
   if (path.startsWith("/haberler")) return 900;
   if (path.startsWith("/ihaleler/ilan/")) return 21600;
   if (path.startsWith("/ihaleler")) return 1800;
@@ -488,6 +501,7 @@ export default {
       if (path === "/api/haberler") return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/haberler") return newsPage(env, url);
+      { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }
       if (path === "/sitemap.xml") return sitemap(env);
       if (path === "/topla/milliemlak.js") return new Response(`const __name = (f) => f;\nreturn (${milliEmlakTopla.toString()})(KEY);`, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store", ...ihaleCors(req) } });
       if (path === "/admin/ilce-uretim") {
@@ -536,6 +550,9 @@ export default {
         if (url.pathname === "/admin/uyap") return Response.json(await uyapAdim(env, { IL_AD, slugify, butce: parseInt(url.searchParams.get("n") || "18", 10) }));
         if (url.pathname === "/admin/bik") return Response.json(await bikAdim(env, { IL_AD, slugify, zorla: url.searchParams.get("zorla") === "1", sayfaSayisi: parseInt(url.searchParams.get("n") || "12", 10) }));
         if (url.pathname === "/admin/fiyat") return Response.json(await fiyatAdim(env, parseInt(url.searchParams.get("parca") || "0", 10)));
+        if (url.pathname === "/admin/haber-sema") return Response.json(await haberSema(env));
+        if (url.pathname === "/admin/haber-adim") return Response.json(await haberAdim(env, Math.min(4, parseInt(url.searchParams.get("n") || "2", 10))));
+        if (url.pathname === "/admin/haber-test") { const n = await env.DB.prepare("SELECT * FROM news WHERE id = ?1").bind(url.searchParams.get("id") || "").first(); if (!n) return Response.json({ hata: "yok" }); const t0 = Date.now(); const z = await haberYaz(env, n, url.searchParams.get("model") || undefined); return Response.json({ baslik: n.title, ms: Date.now() - t0, ...z }); }
         if (url.pathname === "/admin/collect") return Response.json(await collectNews(env, parseInt(url.searchParams.get("slot") || "0", 10)));
       }
       const res = await proxy(req, url);
@@ -555,6 +572,7 @@ export default {
       if (gm >= 241 && gm <= 246) { try { await fiyatAdim(env, gm - 241); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'fiyat', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (min % 30 === 0) await collectNews(env, Math.floor(min / 30));
       else if (min % 4 === 1) { try { await uyapAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'uyap', ?2)").bind(new Date().toISOString(), e.message).run(); } }
+      else if (min % 5 === 3) { try { await haberAdim(env, 2); } catch (e) {} }
       else if (min % 10 === 2) { try { await geoStep(env); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'geo', ?2)").bind(new Date().toISOString(), e.message).run(); } }
     })());
   },
