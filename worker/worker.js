@@ -9,6 +9,15 @@ import { milliEmlakTopla } from "./topla.js";
 import { bikAdim, bikDetay, bikDogrula } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
 import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
+import AJAN from "./ajan.json";
+import { seoDenetim } from "./seo.js";
+/* SEO ajanının panelden onaylanan taslakları (D1: taslak_onay) */
+let onayOnb = { at: 0, set: new Set() };
+async function onayliTaslaklar(env) {
+  if (Date.now() - onayOnb.at < 60000) return onayOnb.set;
+  try { onayOnb = { at: Date.now(), set: new Set(((await env.DB.prepare("SELECT slug FROM taslak_onay WHERE durum = 'yayin'").all()).results || []).map((r) => r.slug)) }; } catch (e) { onayOnb = { at: Date.now(), set: new Set() }; }
+  return onayOnb.set;
+}
 import { ARACLAR, aracSayfa, aracIndex } from "./araclar.js";
 import { parselApi, parselSayfa, PARSEL_CSS } from "./parsel.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
@@ -315,7 +324,7 @@ async function sectionIndex(env, sec) {
   const S = SECTIONS[sec];
   let rows = [];
   try { rows = (await env.DB.prepare("SELECT slug, title, description FROM pages WHERE section = ?1 AND status = 'published' ORDER BY sort, title").bind(sec).all()).results || []; } catch (e) {}
-  if (sec === "rehber") rows = [...rows.filter((r) => !REHBER[r.slug]), ...REHBER_LISTE.map((r) => ({ slug: r.slug, title: r.h1, description: r.desc }))];
+  if (sec === "rehber") { const on = await onayliTaslaklar(env); rows = [...rows.filter((r) => !REHBER[r.slug]), ...REHBER_LISTE.map((r) => ({ slug: r.slug, title: r.h1, description: r.desc })), ...AJAN.taslaklar.filter((t) => on.has(t.slug) && !REHBER[t.slug]).map((t) => ({ slug: t.slug, title: t.h1, description: t.desc }))]; }
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › ${esc(S.name)}</div><h1>${esc(S.name)}</h1><p class="lead">${esc(S.lead)}</p>
 ${rows.length ? `<div class="grid">${rows.map((r) => `<a class="card" href="/${sec}/${r.slug}"><b>${esc(r.title)}</b><span>${esc(r.description)}</span></a>`).join("")}</div>` : `<p class="note">Bu bölümün sayfaları hazırlanıyor.</p>`}`;
   return html(page({ title: `${S.name} · Topraklık`, description: S.lead, path: `/${sec}`, body, current: `/${sec}` }));
@@ -323,6 +332,7 @@ ${rows.length ? `<div class="grid">${rows.map((r) => `<a class="card" href="/${s
 
 async function contentPage(env, sec, slug) {
   if (sec === "rehber" && REHBER[slug]) return rehberSayfa(slug, { esc, page, html, SITE });
+  if (sec === "rehber") { const t = AJAN.taslaklar.find((x) => x.slug === slug); if (t && (await onayliTaslaklar(env)).has(slug)) return rehberSayfa(slug, { esc, page, html, SITE }, t); }
   if (sec === "urun" && URUN[slug]) {
     const u = fiyatUygula(URUN[slug], await urunFiyat(env, slug));
     const related = URUN_LISTE.filter((x) => x.kat === u.kat && x.slug !== slug).slice(0, 14);
@@ -431,6 +441,7 @@ async function sitemap(env, bolum) {
     urls = [["/", today, "1.0"], ["/parsel-sorgu", today, "0.9"], ["/ihaleler", today, "0.9"], ["/haberler", today, "0.8"], ...Object.keys(SECTIONS).map((s) => [`/${s}`, today, "0.8"]), ["/yasal", "2026-10-26", "0.2"],
       ...URUN_LISTE.map((u) => [`/urun/${u.slug}`, "2026-10-27", "0.7"]),
       ...REHBER_LISTE.map((r) => [`/rehber/${r.slug}`, today, "0.8"]),
+      ...AJAN.taslaklar.filter((t) => !REHBER[t.slug]).filter(((on) => (t) => on.has(t.slug))(await onayliTaslaklar(env))).map((t) => [`/rehber/${t.slug}`, today, "0.7"]),
       ["/araclar", today, "0.8"], ["/hakkimizda", today, "0.3"], ["/iletisim", today, "0.3"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
       ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug]) && !(r.section === "rehber" && REHBER[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
   } else if (bolum === "haberler") {
@@ -571,7 +582,7 @@ export default {
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/" && req.method === "GET") return anaSayfa(env, { page, html, esc, latestNews, CATS, ago });
       if (path === "/api/olay" && req.method === "POST") return olayKaydet(req, env);
-      if (path === "/okan" || path === "/okan/plan") return panel(req, env, url, { page, onay: await yetkili(req, env) });
+      if (path === "/okan" || path.startsWith("/okan/")) return panel(req, env, url, { page, onay: await yetkili(req, env), AJAN, rehberOnizle: (t) => rehberSayfa(t.slug, { esc, page, html, SITE }, t, true), seoCalistir: () => seoDenetim(env, (r) => this.isle(r, env, ctxExec)), onayYenile: () => { onayOnb.at = 0; } });
       if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=86400" } });
       if (path === "/haberler") return newsPage(env, url);
       { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }
@@ -623,6 +634,7 @@ export default {
         if (url.pathname === "/admin/onbellek-sil") { const out = {}; for (const u of (url.searchParams.get("u") || "").split(",")) out[u] = await caches.default.delete(new Request(SITE + u)); return Response.json(out); }
         if (url.pathname === "/admin/runs") return Response.json((await env.DB.prepare("SELECT * FROM runs ORDER BY id DESC LIMIT 30").all()).results);
         if (url.pathname === "/admin/bik-dogrula") return Response.json(await bikDogrula(env, Math.min(80, parseInt(url.searchParams.get("n") || "20", 10))));
+        if (url.pathname === "/admin/seo-denetim") return Response.json(await seoDenetim(env, (r) => this.isle(r, env, ctxExec)));
         if (url.pathname === "/admin/uyap-basa") { await env.DB.prepare("INSERT OR REPLACE INTO durum (k, v) VALUES ('uyap', ?1)").bind(JSON.stringify({ skip: 0, tur: 0 })).run(); return Response.json({ ok: true }); }
         if (url.pathname === "/admin/uyap") return Response.json(await uyapAdim(env, { IL_AD, slugify, butce: parseInt(url.searchParams.get("n") || "18", 10) }));
         if (url.pathname === "/admin/bik") return Response.json(await bikAdim(env, { IL_AD, slugify, zorla: url.searchParams.get("zorla") === "1", sayfaSayisi: parseInt(url.searchParams.get("n") || "12", 10) }));
@@ -654,6 +666,7 @@ export default {
       if (min % 4 === 2) await is("haber", () => haberAdim(env, 3));
       if (min % 2 === 0) await is("bik-dogrula", () => bikDogrula(env, 30));
       if (min % 10 === 4) await is("geo", () => geoStep(env));
+      if (gm === 30 && new Date(event.scheduledTime).getUTCDay() === 1) await is("seo", () => seoDenetim(env, (r) => this.isle(r, env, ctx)));
     })());
   },
 };

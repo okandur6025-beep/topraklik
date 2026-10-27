@@ -228,6 +228,30 @@ async function plan(env) {
   return bolum("Site planı", `<div class="pn-kartlar">${kart("Tamamlanan", nf(say.tamam), `%${yuzde(say.tamam, top)}`, "pn-k-yesil")}${kart("Devam eden", nf(say.devam))}${kart("Planlanan", nf(say.plan))}</div><div class="pn-ilerleme"><i style="width:${yuzde(say.tamam, top)}%"></i><i class="d" style="width:${yuzde(say.devam, top)}%"></i></div>`) + ic;
 }
 
+const SEV = { kritik: ["Kritik", "pn-kirmizi"], uyari: ["Uyarı", "pn-sari"], bilgi: ["Bilgi", "pn-gri"] };
+const TD = { bekliyor: ["Onay bekliyor", "pn-sari"], yayin: ["Yayında", "pn-yesil"], red: ["Reddedildi", "pn-gri"] };
+async function seoBolum(env, AJAN) {
+  const [son, gecmis, onay] = await Promise.all([
+    bir(env, "SELECT at, puan, json FROM seo_denetim ORDER BY id DESC LIMIT 1"),
+    q(env, "SELECT at, puan FROM seo_denetim ORDER BY id DESC LIMIT 12"),
+    q(env, "SELECT slug, durum, at FROM taslak_onay"),
+  ]);
+  let d = null; try { d = JSON.parse(son.json || "null"); } catch {}
+  const om = Object.fromEntries(onay.map((r) => [r.slug, r]));
+  const calistir = `<form method="post" action="/okan/seo-calistir" style="margin:0"><button class="btn" type="submit">Denetimi şimdi çalıştır</button></form>`;
+  let h = bolum("Teknik SEO denetimi", d ? `<div class="pn-kartlar">${kart("SEO puanı", `${d.puan}/100`, gecen(d.at), d.puan >= 85 ? "pn-k-yesil" : d.puan < 60 ? "pn-uyari" : "")}${kart("İncelenen sayfa", nf(d.sayfa), `${nf(d.kontrolEdilenLink)} iç bağlantı denendi`)}${kart("Kritik", nf(d.say.kritik), "", d.say.kritik ? "pn-uyari" : "")}${kart("Uyarı", nf(d.say.uyari))}${kart("Kırık bağlantı", nf(d.kirik.length), "", d.kirik.length ? "pn-uyari" : "")}${kart("Tekrar eden başlık", nf(d.tekrar.length))}</div>
+${gecmis.length > 1 ? `<h3>Puan geçmişi</h3>${cubuk([...gecmis].reverse().map((r) => [r.at.slice(0, 10), r.puan]))}` : ""}
+${d.kirik.length ? `<h3>Kırık iç bağlantılar</h3><div class="pn-tablo"><table><thead><tr><th>Bağlantı</th><th>Durum</th><th>Bulunduğu sayfa</th></tr></thead><tbody>${d.kirik.map((k) => `<tr><td>${k.yol}</td><td>${k.durum}</td><td><a href="${k.kaynak}" target="_blank">${k.kaynak}</a></td></tr>`).join("")}</tbody></table></div>` : ""}
+${d.tekrar.length ? `<h3>Aynı başlığı taşıyan sayfalar</h3><ul>${d.tekrar.map((t) => `<li><b>${t.title.replace(/</g, "&lt;")}</b>: ${t.yollar.join(", ")}</li>`).join("")}</ul>` : ""}
+<h3>Sayfa sayfa bulgular</h3><div class="pn-tablo"><table><thead><tr><th>Sayfa</th><th>Başlık</th><th>Açıklama</th><th>Kelime</th><th>Bulgular</th></tr></thead><tbody>${d.sayfalar.map((p) => `<tr><td><a href="${p.yol}" target="_blank">${p.yol}</a>${p.noindex ? "<small>dizine kapalı</small>" : ""}</td><td>${p.tl} kr.</td><td>${p.dl} kr.</td><td>${nf(p.kelime)}</td><td>${p.bulgu.length ? p.bulgu.map(([sv, m]) => `<span class="pn-etiket ${SEV[sv][1]}">${SEV[sv][0]}</span> ${m}`).join("<br>") : `<span class="pn-etiket pn-yesil">Sorun yok</span>`}</td></tr>`).join("")}</tbody></table></div>` : `<p class="pn-bos">Henüz denetim yapılmadı. Denetim her pazartesi gece kendiliğinden çalışır.</p>`, calistir);
+  const r = AJAN.raporlar[0];
+  h += bolum("SEO ajanı raporu (Google görünürlüğü)", r ? `<p class="pn-not" style="margin-top:0">${r.tarih}${r.ozet ? " · " + r.ozet.replace(/</g, "&lt;") : ""}</p>
+${(r.gorunurluk || []).length ? `<div class="pn-tablo"><table><thead><tr><th>Arama</th><th>Topraklık sırası</th><th>İlk sıradaki</th></tr></thead><tbody>${r.gorunurluk.map((g) => `<tr><td>${String(g.sorgu).replace(/</g, "&lt;")}</td><td>${g.sira ? `<span class="pn-etiket ${g.sira <= 3 ? "pn-yesil" : g.sira <= 10 ? "pn-sari" : "pn-gri"}">${g.sira}.</span>${g.url ? `<small>${String(g.url).replace(/</g, "&lt;")}</small>` : ""}` : `<span class="pn-etiket pn-gri">İlk 10'da yok</span>`}</td><td><small>${String((g.ilkler || [])[0]?.baslik || (g.ilkler || [])[0]?.url || "").replace(/</g, "&lt;").slice(0, 90)}</small></td></tr>`).join("")}</tbody></table></div>` : ""}
+${(r.oneriler || []).length ? `<h3>Öneriler</h3><ol>${r.oneriler.map((o) => `<li>${String(typeof o === "string" ? o : o.metin || "").replace(/</g, "&lt;")}</li>`).join("")}</ol>` : ""}` : `<p class="pn-bos">Ajanın ilk raporu bekleniyor. Ajan haftada iki kez (salı ve cuma) çalışır.</p>`);
+  h += bolum("İçerik taslakları", AJAN.taslaklar.length ? `<div class="pn-tablo"><table><thead><tr><th>Taslak</th><th>Hedef arama</th><th>Durum</th><th></th></tr></thead><tbody>${AJAN.taslaklar.map((t) => { const dr = om[t.slug]?.durum || "bekliyor"; return `<tr><td><b>${String(t.h1).replace(/</g, "&lt;")}</b><small>${t.tarih || ""} · /rehber/${t.slug}</small></td><td>${String(t.hedef || "").replace(/</g, "&lt;")}</td><td><span class="pn-etiket ${TD[dr][1]}">${TD[dr][0]}</span></td><td style="white-space:nowrap"><a class="btn" href="/okan/taslak/${t.slug}" target="_blank">Önizle</a> <form method="post" action="/okan/taslak" style="display:inline"><input type="hidden" name="slug" value="${t.slug}">${dr !== "yayin" ? `<button class="btn dolu" name="durum" value="yayin">Yayınla</button>` : `<button class="btn" name="durum" value="bekliyor">Yayından al</button>`} ${dr !== "red" ? `<button class="btn" name="durum" value="red">Reddet</button>` : ""}</form></td></tr>`; }).join("")}</tbody></table></div><p class="pn-not">Taslaklar sen "Yayınla" demeden sitede görünmez. Yayınlanan taslak rehberler bölümüne ve site haritasına eklenir.</p>` : `<p class="pn-bos">Henüz taslak yok.</p>`);
+  return h;
+}
+
 function baglantilar() {
   const L = [["Cloudflare paneli", "https://dash.cloudflare.com", "Workers, D1 veritabanı, faturalar"], ["Cloudflare Access", "https://one.dash.cloudflare.com", "Panele kimlerin girebileceği"], ["Google Search Console", "https://search.google.com/search-console", "Google'da görünürlük, indeksleme"], ["GitHub deposu", "https://github.com/okandur6025-beep/topraklik", "Sitenin kodu"], ["Site haritası", "/sitemap.xml", "Google'a verilen sayfa listesi"], ["Haber Bülteni", "/haberler", ""], ["Parsel sorgu", "/parsel-sorgu", ""], ["İhaleler", "/ihaleler", ""]];
   return bolum("Bağlantılar", `<div class="pn-baglar">${L.map(([a, u, d]) => `<a href="${u}" target="_blank" rel="noopener"><b>${a}</b><small>${d}</small></a>`).join("")}</div>`);
@@ -277,11 +301,12 @@ body{background:#F3EFE5}main.wrap{max-width:1180px}
 .pn-giris{max-width:560px;margin:40px auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px}
 @media (max-width:800px){.pn-iki{grid-template-columns:1fr}.pn-madde{grid-template-columns:1fr}.pn-cs{grid-template-columns:minmax(0,1.3fr) minmax(0,.8fr) auto 34px}}`;
 
-const SEKME = [["ozet", "Genel bakış"], ["trafik", "Trafik"], ["ilanlar", "İlanlar ve içerik"], ["ajanlar", "Ajanlar"], ["plan", "Site planı"], ["baglantilar", "Bağlantılar"]];
+const SEKME = [["ozet", "Genel bakış"], ["trafik", "Trafik"], ["seo", "SEO"], ["ilanlar", "İlanlar ve içerik"], ["ajanlar", "Ajanlar"], ["plan", "Site planı"], ["baglantilar", "Bağlantılar"]];
 
 const yanit = (s, durum = 200) => new Response(s, { status: durum, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" } });
 
-export async function panel(req, env, url, { page, onay }) {
+export async function panel(req, env, url, ctx) {
+  const { page, onay } = ctx;
   const k = onay ? { email: "yonetici" } : await erisim(req, env);
   if (!k) return yanit(page({ title: "Yönetim paneli · Topraklık", description: "", path: "/okan", noindex: true, body: `<div class="pn-giris"><h1>Giriş gerekli</h1><p>Bu sayfa yalnızca yetkili e-posta adresiyle açılır. Lütfen sayfayı yenileyin; e-posta doğrulama ekranı açılacaktır.</p></div><style>${CSS}</style>` }), 401);
   if (k.kurulum) return yanit(page({ title: "Yönetim paneli kurulumu · Topraklık", description: "", path: "/okan", noindex: true, body: `<div class="pn-giris"><h1>Panel kurulumu bekliyor</h1><p>E-postayla giriş için Cloudflare Access ayarı tamamlanınca panel burada açılacak. Kurulum adımları Claude sohbetinde.</p></div><style>${CSS}</style>` }), 503);
@@ -294,9 +319,20 @@ export async function panel(req, env, url, { page, onay }) {
     }
     return Response.redirect(url.origin + "/okan?b=plan", 303);
   }
+  if (url.pathname.startsWith("/okan/taslak/")) { const t = (ctx.AJAN?.taslaklar || []).find((x) => x.slug === url.pathname.split("/").pop()); return t ? ctx.rehberOnizle(t) : yanit("Taslak bulunamadı", 404); }
+  if (url.pathname === "/okan/taslak" && req.method === "POST") {
+    const f = await req.formData(), slug = String(f.get("slug") || ""), durum = String(f.get("durum") || "");
+    if ((ctx.AJAN?.taslaklar || []).some((x) => x.slug === slug) && TD[durum]) {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS taslak_onay (slug TEXT PRIMARY KEY, durum TEXT, at TEXT)").run();
+      await env.DB.prepare("INSERT INTO taslak_onay (slug, durum, at) VALUES (?1, ?2, ?3) ON CONFLICT(slug) DO UPDATE SET durum = excluded.durum, at = excluded.at").bind(slug, durum, new Date().toISOString()).run();
+      ctx.onayYenile?.();
+    }
+    return Response.redirect(url.origin + "/okan?b=seo", 303);
+  }
+  if (url.pathname === "/okan/seo-calistir" && req.method === "POST") { await ctx.seoCalistir(); return Response.redirect(url.origin + "/okan?b=seo", 303); }
   const b = SEKME.some(([s]) => s === url.searchParams.get("b")) ? url.searchParams.get("b") : "ozet";
   const g = [1, 7, 30, 90].includes(+url.searchParams.get("g")) ? +url.searchParams.get("g") : 7;
-  const ic = b === "trafik" ? await trafik(env, g) : b === "ilanlar" ? await ilanlar(env) : b === "ajanlar" ? await ajanlar(env) : b === "plan" ? await plan(env) : b === "baglantilar" ? baglantilar() : await ozet(env);
+  const ic = b === "trafik" ? await trafik(env, g) : b === "ilanlar" ? await ilanlar(env) : b === "ajanlar" ? await ajanlar(env) : b === "plan" ? await plan(env) : b === "seo" ? await seoBolum(env, ctx.AJAN || { taslaklar: [], raporlar: [] }) : b === "baglantilar" ? baglantilar() : await ozet(env);
   const ad = (k.email || "").split("@")[0];
   const saat = new Date(Date.now() + 3 * 3600e3).toISOString().slice(11, 16);
   const body = `<div class="pn-ust"><div><h1>Merhaba${ad ? " " + ad.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]/g, "").slice(0, 1).toUpperCase() + ad.replace(/[^a-zA-Z0-9çğıöşüÇĞİÖŞÜ]/g, "").slice(1, 20).replace(/\d+$/, "") : ""}</h1><p>Topraklık yönetim paneli · ${gunTR()} ${saat}</p></div><a class="btn" href="/cdn-cgi/access/logout">Çıkış yap</a></div>

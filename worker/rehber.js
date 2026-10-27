@@ -14,8 +14,8 @@ function md(t, esc) {
   }).join("");
 }
 
-export function rehberSayfa(slug, { esc, page, html, SITE }) {
-  const r = REHBER[slug];
+export function rehberSayfa(slug, { esc, page, html, SITE }, ek = null, onizleme = false) {
+  const r = ek || REHBER[slug];
   if (!r) return null;
   const ilgili = (r.ilgili || []).map((x) => (x.startsWith("/") ? [x, x === "/parsel-sorgu" ? "Parsel sorgulama" : x === "/ihaleler" ? "Güncel ihaleler" : x === "/urun" ? "Ürün rehberleri" : x.startsWith("/araclar/") ? "Hesaplama aracı" : x] : REHBER[x] ? [`/rehber/${x}`, REHBER[x].h1] : [`/rehber/${x}`, x.replace(/-/g, " ")]));
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/rehber">İhale ve tapu rehberleri</a> › ${esc(r.h1)}</div>
@@ -26,5 +26,5 @@ ${r.bolumler.map(([b, t]) => `<h2>${esc(b)}</h2>${md(t, esc)}`).join("\n")}
 <aside><h3>İlgili sayfalar</h3>${ilgili.map(([l, t]) => `<a class="card" href="${esc(l)}"><b>${esc(t)}</b></a>`).join("")}<a class="card" href="/ihaleler"><b>Güncel tarla ve arsa ihaleleri →</b></a><a class="card" href="/araclar"><b>Hesaplama araçları →</b></a></aside></div>`;
   const jsonld = [{ "@context": "https://schema.org", "@type": "Article", headline: r.h1, description: r.desc, inLanguage: "tr", dateModified: "2026-10-27", author: { "@type": "Organization", name: "Topraklık" }, publisher: { "@type": "Organization", name: "Topraklık", url: SITE } },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: r.sss.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
-  return html(page({ title: `${r.title} · Topraklık`, description: r.desc, path: `/rehber/${slug}`, body, current: "/rehber", jsonld }), 200, 3600);
+  return html(page({ title: `${r.title} · Topraklık`, description: r.desc, path: `/rehber/${slug}`, body, current: "/rehber", jsonld, noindex: onizleme }), 200, onizleme ? 0 : 3600);
 }

@@ -2,7 +2,7 @@ name: Yayınla
 on:
   push:
     branches: [main]
-    paths: ["site/**", "worker/**", ".github/workflows/deploy.yml"]
+    paths: ["site/**", "worker/**", "icerik/ajan/**", ".github/workflows/deploy.yml"]
   workflow_dispatch:
 jobs:
   deploy:
@@ -16,6 +16,8 @@ jobs:
         with: { node-version: 22 }
       - name: Site (Cloudflare Pages)
         run: npx --yes wrangler@4 pages deploy site --project-name topraklik --branch main --commit-dirty=true
+      - name: SEO ajanı taslak ve raporlarını derle
+        run: node icerik/ajan/derle.mjs
       - name: Worker (topraklik-web)
         working-directory: worker
         run: npx --yes wrangler@4 deploy
