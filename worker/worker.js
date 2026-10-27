@@ -121,7 +121,7 @@ function centre(geom) {
   return [Math.round(((y0 + y1) / 2) * 1e5) / 1e5, Math.round(((x0 + x1) / 2) * 1e5) / 1e5];
 }
 async function tkgm(path) {
-  const r = await fetch(TKGM + path, { headers: { "user-agent": UA, accept: "application/json" } });
+  const r = await fetch(TKGM + path, { headers: { "user-agent": UA, accept: "application/json", referer: "https://parselsorgu.tkgm.gov.tr/", origin: "https://parselsorgu.tkgm.gov.tr" } });
   if (!r.ok) throw new Error(`TKGM ${path}: HTTP ${r.status}`);
   return ((await r.json()).features || []).map((f) => { const [lat, lng] = centre(f.geometry || {}); return { id: f.properties.id, ad: String(f.properties.text).trim(), lat, lng }; });
 }

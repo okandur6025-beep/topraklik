@@ -100,7 +100,7 @@ async function ozet(env) {
     q(env, "SELECT kaynak, count(*) n FROM ihale WHERE aktif = 1 AND bitis >= ?1 GROUP BY kaynak", bugun),
     bir(env, "SELECT count(*) t, sum(CASE WHEN ozet IS NOT NULL AND alakali = 1 THEN 1 ELSE 0 END) o FROM news WHERE published_at >= ?1", new Date(Date.now() - 864e5).toISOString()),
     bir(env, "SELECT v FROM durum WHERE k = 'uyap'"),
-    bir(env, "SELECT count(*) n FROM runs WHERE at >= ?1 AND (job != 'news' OR log LIKE '%hata%' OR log LIKE '%HTTP 5%' OR log LIKE '%rror%')", new Date(Date.now() - 864e5).toISOString()),
+    bir(env, "SELECT count(*) n FROM runs WHERE at >= ?1 AND ((job IN ('uyap','haber','geo','bik','fiyat','news') AND (job != 'news' OR log LIKE '%hata%')) OR log LIKE '%HTTP 4%' OR log LIKE '%HTTP 5%' OR log LIKE '%rror%' OR log LIKE '%exceeded%')", new Date(Date.now() - 864e5).toISOString()),
     bir(env, "SELECT count(*) n FROM ihale WHERE ilk_gorulme >= ?1", new Date(Date.now() - 864e5).toISOString()),
   ]);
   const gunler = Array.from({ length: 30 }, (_, i) => gunTR(29 - i));
@@ -191,7 +191,7 @@ const AJANLAR = [
 async function ajanlar(env) {
   const [durum, hatalar, me, taslak] = await Promise.all([
     q(env, "SELECT k, v FROM durum"),
-    q(env, "SELECT at, job, log FROM runs WHERE (job != 'news' OR log LIKE '%hata%' OR log LIKE '%HTTP 5%' OR log LIKE '%rror%') ORDER BY id DESC LIMIT 20"),
+    q(env, "SELECT at, job, log FROM runs WHERE ((job IN ('uyap','haber','geo','bik','fiyat','news') AND (job != 'news' OR log LIKE '%hata%')) OR log LIKE '%HTTP 4%' OR log LIKE '%HTTP 5%' OR log LIKE '%rror%' OR log LIKE '%exceeded%') ORDER BY id DESC LIMIT 20"),
     bir(env, "SELECT max(guncel) son, count(*) n FROM ihale WHERE kaynak = 'milliemlak' AND aktif = 1"),
     bir(env, "SELECT count(*) n, max(updated_at) son FROM pages WHERE status = 'draft'"),
   ]);
