@@ -148,7 +148,15 @@ async function geoStep(env) {
 
 const NEWS_COLS = "id, title, source, url, published_at, category, ozet, onem, konu";
 async function latestNews(env, o = {}) {
-  try { return await latestNews0(env, o); } catch (e) { if (!/no such column/i.test(e.message)) throw e; await haberSema(env); return latestNews0(env, o); }
+  try { return await latestNews0(env, o); } catch (e) {
+    if (!/no such column/i.test(e.message)) throw e;
+    await haberSema(env);
+    try { return await latestNews0(env, o); } catch (e2) { /* sütunlar henüz eklenemedi (D1 yazma kotası): eski sorgu */
+      const { cat, limit = 30, offset = 0 } = o;
+      const q = cat ? env.DB.prepare("SELECT id, title, source, url, published_at, category FROM news WHERE category = ?1 ORDER BY published_at DESC LIMIT ?2 OFFSET ?3").bind(cat, limit, offset) : env.DB.prepare("SELECT id, title, source, url, published_at, category FROM news ORDER BY published_at DESC LIMIT ?1 OFFSET ?2").bind(limit, offset);
+      return (await q.all()).results || [];
+    }
+  }
 }
 async function latestNews0(env, { cat, limit = 30, offset = 0 } = {}) {
   const q = cat
@@ -501,7 +509,7 @@ export default {
     const url = new URL(req.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
     try {
-      if (path === "/api/haberler") { try { return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message, sema: await haberSema(env) }, { status: 500 }); } }
+      if (path === "/api/haberler") { try { return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/haberler") return newsPage(env, url);
       { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }

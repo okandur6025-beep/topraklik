@@ -102,7 +102,7 @@ export async function haberAdim(env, adet = 2) {
   if (!env.AI) return ["AI bağlı değil"];
   const sec = () => env.DB.prepare("SELECT id, title, url, source, summary, published_at FROM news WHERE islendi IS NULL AND published_at > ?1 ORDER BY published_at DESC LIMIT ?2").bind(new Date(Date.now() - 5 * 864e5).toISOString(), adet).all();
   let res;
-  try { res = await sec(); } catch (e) { if (!/no such column/i.test(e.message)) throw e; await haberSema(env); res = await sec(); }
+  try { res = await sec(); } catch (e) { if (!/no such column/i.test(e.message)) throw e; await haberSema(env); try { res = await sec(); } catch (e2) { return ["şema bekliyor: " + e2.message.slice(0, 80)]; } }
   const rows = res.results || [];
   const log = [];
   for (const n of rows) {
