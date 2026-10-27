@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /okan
+Disallow: /admin/
+Disallow: /api/
+Disallow: /topla/
 
 Sitemap: https://topraklik.com/sitemap.xml
