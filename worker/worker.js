@@ -241,12 +241,20 @@ footer .ayak{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:24px;paddi
 
 const NAV = [["/ihaleler", "İhaleler"], ["/parsel-sorgu", "Parsel sorgu"], ["/haberler", "Haber Bülteni"], ["/urun", "Ürünler"], ["/rehber", "Rehber"], ["/araclar", "Araçlar"]];
 
+/* Google başlığı ~60–65 karakterden sonra keser: marka eki sığmazsa düşer, çok uzunsa kelime sınırında kısalır */
+function kisaBaslik(t) {
+  for (const ek of [" · Topraklık Haber Bülteni", " · Topraklık"]) if (t.length > 65 && t.endsWith(ek)) t = t.slice(0, -ek.length);
+  if (t.length > 68) { t = t.slice(0, 66); t = t.slice(0, t.lastIndexOf(" ")).replace(/[,:;·(\-–]+$/, "").trim(); }
+  return t;
+}
 function page({ title, description, path, body, current, jsonld, noindex, tam, ekCss }) {
   const url = SITE + path;
+  const ogTitle = title;
+  title = kisaBaslik(title);
   return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(description)}"><link rel="canonical" href="${url}">${noindex ? '<meta name="robots" content="noindex">' : ""}
 <meta property="og:type" content="website"><meta property="og:site_name" content="Topraklık"><meta property="og:locale" content="tr_TR">
-<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
+<meta property="og:title" content="${esc(ogTitle)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">${MOBIL_META}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
 <style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}${path === "/parsel-sorgu" ? PARSEL_CSS : ""}${ekCss || ""}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
@@ -601,8 +609,8 @@ export default {
         if (req.method !== "POST" || !(await yetkili(req, env))) return new Response("yetkisiz", { status: 401, headers: cors });
         try { return Response.json(await ihaleYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
       }
-      if (path === "/hakkimizda") return html(page({ title: "Hakkımızda · Topraklık", description: "Topraklık; icra ve hazine arazi ihalelerini, parsel bilgisini, tarım rehberlerini ve piyasa fiyatlarını tek yerde toplayan bağımsız bir platformdur.", path: "/hakkimizda", body: HAKKIMIZDA, current: "" }), 200, 86400);
-      if (path === "/iletisim") return html(page({ title: "İletişim · Topraklık", description: "Topraklık ile iletişim: öneri, düzeltme ve iş birliği için e-posta adresleri.", path: "/iletisim", body: ILETISIM, current: "" }), 200, 86400);
+      if (path === "/hakkimizda") return html(page({ title: "Topraklık hakkında: ne yapıyoruz, veriler nereden geliyor", description: "Topraklık; icra ve hazine arazi ihalelerini, parsel bilgisini, tarım rehberlerini ve piyasa fiyatlarını tek yerde toplayan bağımsız bir platformdur.", path: "/hakkimizda", body: HAKKIMIZDA, current: "" }), 200, 86400);
+      if (path === "/iletisim") return html(page({ title: "İletişim: Topraklık'a ulaşın, hata ve öneri bildirin", description: "Topraklık ile iletişim: öneri, düzeltme ve iş birliği için e-posta adresleri.", path: "/iletisim", body: ILETISIM, current: "" }), 200, 86400);
       if (path === "/araclar") return aracIndex({ esc, page, html });
       if (path === "/parsel-sorgu") return parselSayfa({ esc, page, html, ARACLAR });
       if (path.startsWith("/api/idari/") || path === "/api/parsel") { const r = await parselApi(req, env, ctxExec, url); if (r) return r; }
