@@ -214,7 +214,7 @@ export async function ihaleDetay(env, id, ctx) {
   const h = hisseli(x), sm = satilanM2(x);
   const birim = sm && x.bedel && x.tip !== "kira" ? x.bedel / sm : 0;
   let tk = null; try { tk = JSON.parse(x.takvim || "null"); } catch {}
-  const mahAd = x.mahalle ? String(x.mahalle).toLocaleLowerCase("tr").replace(/(^|\s)\S/g, (c) => c.toLocaleUpperCase("tr")) : "";
+  const mahAd = x.mahalle ? String(x.mahalle).toLocaleLowerCase("tr").replace(/(^|\s)\S/g, (c) => c.toLocaleUpperCase("tr")).replace(new RegExp("^" + String(x.ilce || "").replace(/[.*+?^${}()|[\]\\]/g, "") + "\\s+", "i"), "") : "";
   const baslik = (icra ? `${x.il} ${x.ilce} ${mahAd} ${x.ada ? x.ada + "/" + x.parsel : ""} ${x.m2 ? (h ? nf(sm) + " m² hisseli" : nf(x.m2) + " m²") : ""} ${(x.cins || "taşınmaz").toLocaleLowerCase("tr")} icradan satılık` : `${x.il} ${x.ilce} ${x.mahalle || ""} ${x.ada}/${x.parsel} ${x.cins || "taşınmaz"} ${TIP[x.tip]?.toLocaleLowerCase("tr")} ihalesi`).replace(/\s+/g, " ");
   const benzer = (await env.DB.prepare(`SELECT * FROM ihale WHERE ${AKTIF} AND il_slug = ?2 AND id != ?3 ORDER BY tarih LIMIT 6`).bind(bugun(), x.il_slug, id).all()).results || [];
   const urunler = (IL_URUN?.(x.il_slug) || []).filter((u) => u.durum === "yaygin").slice(0, 10);
@@ -253,9 +253,9 @@ ${icra ? `<p>İcra ve mahkeme satışları UYAP e-Satış portalında elektronik
 <p>Ayrıntılı adımlar için <a href="/rehber/hazine-arazisi-nasil-alinir">hazine arazisi nasıl alınır</a> rehberine bakın.</p>`}
 ${urunler.length ? `<h2>${esc(x.il)} ilinde yaygın yetişen ürünler</h2><p class="chips">${urunler.map((u) => `<a class="tag" href="/urun/${u.urun}">${esc(u.ad)}</a>`).join("")}</p><p>Arazide ne ekebileceğinizi ve tahmini kazancı <a href="/il/${esc(x.il_slug)}">${esc(x.il)} sayfasından</a> ve ürün rehberlerindeki hesaplayıcıdan görebilirsiniz.</p>` : ""}
 <div class="src">Kaynak: <a href="${esc(x.link)}" target="_blank" rel="noopener nofollow">${x.kaynak === "uyap" ? "UYAP e-Satış ilanı, ilan.gov.tr" : icra ? "Basın İlan Kurumu, ilan.gov.tr" : "T.C. Çevre, Şehircilik ve İklim Değişikliği Bakanlığı Milli Emlak Genel Müdürlüğü"}</a> · Topraklık'ta ilk görülme: ${esc((x.ilk_gorulme || "").slice(0, 10))} · son kontrol: ${esc((x.guncel || "").slice(0, 10))}<br>Bilgiler kaynaktan otomatik alınır; teklif vermeden önce ilanın aslını ve şartnamesini kontrol edin.</div></article>
-<aside><h3>${esc(x.il)} ilindeki diğer ihaleler</h3>${benzer.length ? benzer.map((b) => `<a class="card" href="/ihaleler/ilan/${esc(b.id)}"><b>${esc(b.cins || "")} · ${nf(b.m2)} m²</b><span>${esc(b.ilce)} · ${b.bedel ? tl(b.bedel) : ""} · ${esc(trTarih(b.tarih).split(" · ")[0])}</span></a>`).join("") : `<p>Şu an başka ilan yok.</p>`}<a class="card" href="/ihaleler/${esc(x.il_slug)}"><b>Tüm ${esc(x.il)} ihaleleri →</b></a></aside></div>`;
+<aside><h3>${esc(x.il)} ilindeki diğer ihaleler</h3>${benzer.length ? benzer.map((b) => `<a class="card" href="/ihaleler/ilan/${esc(b.id)}"><b>${esc(b.cins || "Taşınmaz")}${b.m2 ? ` · ${nf(satilanM2(b))} m²${hisseli(b) ? " hisse" : ""}` : ""}</b><span>${esc(b.ilce)}${b.bedel ? " · " + tl(b.bedel) : ""} · ${esc(asama(b, bugun()).metin)}</span></a>`).join("") : `<p>Şu an başka ilan yok.</p>`}<a class="card" href="/ihaleler/${esc(x.il_slug)}"><b>Tüm ${esc(x.il)} ihaleleri →</b></a></aside></div>`;
   const jsonld = [{ "@context": "https://schema.org", "@type": "RealEstateListing", name: baslik, url: `https://topraklik.com/ihaleler/ilan/${x.id}`, datePosted: (x.ilk_gorulme || "").slice(0, 10), ...(x.bedel ? { offers: { "@type": "Offer", price: x.bedel, priceCurrency: "TRY" } } : {}) }];
-  return html(page({ title: `${baslik} · Topraklık`, description: `${x.il} ${x.ilce} ${x.mahalle || ""} ${x.ada} ada ${x.parsel} parsel, ${nf(x.m2)} m² ${x.cins || ""}. ${x.bedel ? tl(x.bedel) : ""}, ihale ${trTarih(x.tarih)}.`, path: `/ihaleler/ilan/${x.id}`, body, current: "/ihaleler", jsonld, noindex: gecti }), 200, 1800);
+  return html(page({ title: `${baslik} · Topraklık`, description: `${[x.il, x.ilce, mahAd].filter(Boolean).join(" ")}${x.ada ? ` ${x.ada} ada ${x.parsel} parsel` : ""}${x.m2 ? `, ${h ? nf(sm) + " m² hisse" : nf(x.m2) + " m²"}` : ""} ${(x.cins || "taşınmaz").toLocaleLowerCase("tr")}.${x.bedel ? ` ${x.tip === "kira" ? "Yıllık kira" : "Muhammen bedel"} ${tl(x.bedel)}.` : ""} ${as.metin}.`.replace(/\s+/g, " "), path: `/ihaleler/ilan/${x.id}`, body, current: "/ihaleler", jsonld, noindex: gecti }), 200, 1800);
 }
 
 export async function ihaleKutusu(env, { il, ilce, limit = 5 }, esc) {
@@ -265,7 +265,7 @@ export async function ihaleKutusu(env, { il, ilce, limit = 5 }, esc) {
     const rows = (await env.DB.prepare(`SELECT * FROM ihale WHERE ${w.join(" AND ")} ORDER BY tarih LIMIT ${limit}`).bind(...b).all()).results || [];
     const n = (await env.DB.prepare(`SELECT count(*) n FROM ihale WHERE ${w.join(" AND ")}`).bind(...b).first())?.n || 0;
     if (!n) return "";
-    return `<h3>Güncel hazine ihaleleri (${n})</h3>${rows.map((x) => `<a class="card" href="/ihaleler/ilan/${esc(x.id)}"><b>${esc(x.cins || "")} · ${nf(x.m2)} m²</b><span>${esc(x.ilce)} · ${x.bedel ? tl(x.bedel) : ""} · ${esc(trTarih(x.tarih).split(" · ")[0])}</span></a>`).join("")}<a class="card" href="/ihaleler/${esc(il)}${ilce ? "/" + esc(ilce) : ""}"><b>Tümünü gör →</b></a>`;
+    return `<h3>Güncel hazine ihaleleri (${n})</h3>${rows.map((x) => `<a class="card" href="/ihaleler/ilan/${esc(x.id)}"><b>${esc(x.cins || "Taşınmaz")}${x.m2 ? ` · ${nf(x.m2)} m²` : ""}</b><span>${esc(x.ilce)} · ${x.bedel ? tl(x.bedel) : ""} · ${esc(trTarih(x.tarih).split(" · ")[0])}</span></a>`).join("")}<a class="card" href="/ihaleler/${esc(il)}${ilce ? "/" + esc(ilce) : ""}"><b>Tümünü gör →</b></a>`;
   } catch (e) { return ""; }
 }
 
