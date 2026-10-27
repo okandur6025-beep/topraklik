@@ -8,6 +8,7 @@ import { fiyatAdim, urunFiyat } from "./fiyat.js";
 import { milliEmlakTopla } from "./topla.js";
 import { bikAdim, bikDetay } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
+import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
@@ -203,7 +204,7 @@ aside .card{margin-bottom:12px}
 footer{border-top:1px solid var(--line);background:var(--paper);padding:24px 0;font-size:13.5px;color:var(--muted)}
 footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}`;
 
-const NAV = [["/", "Ana sayfa"], ["/ihaleler", "İhaleler"], ["/haberler", "Haberler"], ["/rehber", "İhale ve tapu"], ["/hibe", "Hibe ve destek"], ["/il", "İller"], ["/urun", "Ürünler"]];
+const NAV = [["/", "Ana sayfa"], ["/ihaleler", "İhaleler"], ["/araclar", "Araçlar"], ["/haberler", "Haberler"], ["/rehber", "İhale ve tapu"], ["/hibe", "Hibe ve destek"], ["/il", "İller"], ["/urun", "Ürünler"]];
 
 function page({ title, description, path, body, current, jsonld, noindex }) {
   const url = SITE + path;
@@ -353,6 +354,7 @@ async function sitemap(env) {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [["/", today, "1.0"], ["/haberler", today, "0.8"], ...Object.keys(SECTIONS).map((s) => [`/${s}`, today, "0.8"]), ["/yasal", "2026-10-26", "0.2"],
     ...URUN_LISTE.map((u) => [`/urun/${u.slug}`, "2026-10-27", "0.7"]),
+    ["/araclar", today, "0.8"], ["/parsel-sorgu", today, "0.9"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
     ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
   const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
   const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
@@ -437,7 +439,7 @@ function onbellekSuresi(path) {
   if (path.startsWith("/haberler")) return 900;
   if (path.startsWith("/ihaleler/ilan/")) return 21600;
   if (path.startsWith("/ihaleler")) return 1800;
-  if (/^\/(il|urun|rehber|hibe)(\/|$)/.test(path)) return 21600;
+  if (/^\/(il|urun|rehber|hibe|araclar|parsel-sorgu)(\/|$)/.test(path)) return 21600;
   return 0;
 }
 
@@ -482,6 +484,10 @@ export default {
         if (req.method !== "POST" || !env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401, headers: cors });
         try { return Response.json(await ihaleYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
       }
+      if (path === "/araclar") return aracIndex({ esc, page, html });
+      if (path === "/parsel-sorgu") return parselSorgu({ esc, page, html });
+      const ar = path.match(/^\/araclar\/([a-z0-9-]+)$/);
+      if (ar && ARACLAR[ar[1]]) return aracSayfa(ar[1], { esc, page, html });
       const ih = path.match(/^\/ihaleler(?:\/([a-z0-9-]+))?(?:\/([a-z0-9-]+))?$/);
       if (ih) {
         const ctx = { esc, page, html, IL_URUN: urunleriIl, bikDetay, exec: ctxExec };
