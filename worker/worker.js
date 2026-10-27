@@ -3,6 +3,7 @@
 // - Ana sayfaya kayan yazı + "Tarımda bugün" kutusu + menü linkleri ekler
 // - /haberler, /rehber, /hibe, /il, /urun sayfalarını D1'den üretir
 // - Her 2 saatte bir tarım haberlerini toplar (cron)
+import { URUN, URUN_LISTE, IL_AD, urunleriIl, urunPage, urunJsonLd, URUN_CSS } from "./urun.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
 const UA = "Mozilla/5.0 (compatible; TopraklikBot/1.0; +https://topraklik.com)";
@@ -206,7 +207,7 @@ function page({ title, description, path, body, current, jsonld }) {
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
-<style>${CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
+<style>${CSS}${URUN_CSS}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
 <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
@@ -234,7 +235,8 @@ async function newsPage(env, url) {
 
 const URUN_KAT = ["Tahıllar", "Baklagiller", "Yağlı tohumlar", "Endüstri bitkileri", "Yem bitkileri", "Sebzeler", "Meyveler", "Sert kabuklular", "Tıbbi ve aromatik bitkiler", "Yeni ve alternatif ürünler"];
 async function urunIndex(env) {
-  const rows = (await env.DB.prepare("SELECT slug, h1, description, category FROM pages WHERE section = 'urun' AND status = 'published'").all()).results || [];
+  const db = ((await env.DB.prepare("SELECT slug, h1, description, category FROM pages WHERE section = 'urun' AND status = 'published'").all()).results || []).filter((r) => !URUN[r.slug]);
+  const rows = [...URUN_LISTE.map((u) => ({ slug: u.slug, h1: u.ad + " yetiştiriciliği", description: u.ozet, category: u.kat })), ...db];
   const by = {}; rows.forEach((r) => (by[r.category || "Diğer"] ||= []).push(r));
   const cats = [...URUN_KAT.filter((k) => by[k]), ...Object.keys(by).filter((k) => !URUN_KAT.includes(k))];
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Ürün rehberleri</div><h1>Ürün rehberleri: ne, nerede, nasıl yetişir?</h1><p class="lead">${rows.length} ürün için iklim ve toprak isteği, ekim zamanı, bölge bölge ve il il yetiştiricilik bilgisi.</p>
@@ -243,7 +245,8 @@ ${cats.map((k) => `<h2 id="${slugify(k)}">${esc(k)}</h2><div class="grid">${by[k
   return html(page({ title: "Ürün rehberleri: ne nerede nasıl yetişir? · Topraklık", description: "Tahıl, baklagil, sebze, meyve, sert kabuklu, tıbbi bitki ve yeni ürünler: ekim zamanı, iklim, toprak ve il il yetiştiricilik rehberi.", path: "/urun", body, current: "/urun" }));
 }
 async function ilUrunleri(env, ilSlug) {
-  return (await env.DB.prepare("SELECT u.urun, u.ad, u.durum FROM urun_il u JOIN pages p ON p.section = 'urun' AND p.slug = u.urun AND p.status = 'published' WHERE u.il = ?1").bind(ilSlug).all()).results || [];
+  const db = ((await env.DB.prepare("SELECT u.urun, u.ad, u.durum FROM urun_il u JOIN pages p ON p.section = 'urun' AND p.slug = u.urun AND p.status = 'published' WHERE u.il = ?1").bind(ilSlug).all()).results || []).filter((r) => !URUN[r.urun]);
+  return [...urunleriIl(ilSlug), ...db];
 }
 function urunListHtml(list, title) {
   const y = list.filter((x) => x.durum === "yaygin").sort((a, b) => a.ad.localeCompare(b.ad, "tr")), u = list.filter((x) => x.durum !== "yaygin").sort((a, b) => a.ad.localeCompare(b.ad, "tr"));
@@ -261,6 +264,12 @@ ${rows.length ? `<div class="grid">${rows.map((r) => `<a class="card" href="/${s
 }
 
 async function contentPage(env, sec, slug) {
+  if (sec === "urun" && URUN[slug]) {
+    const u = URUN[slug];
+    const related = URUN_LISTE.filter((x) => x.kat === u.kat && x.slug !== slug).slice(0, 14);
+    const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/urun">Ürün rehberleri</a> › <a href="/urun#${slugify(u.kat)}">${esc(u.kat)}</a> › ${esc(u.ad)}</div>${urunPage(u, { esc, IL_AD, related })}`;
+    return html(page({ title: `${u.title || u.ad + " yetiştiriciliği: nerede, nasıl yetişir, ne kazandırır?"} · Topraklık`, description: u.description || u.ozet, path: `/urun/${slug}`, body, current: "/urun", jsonld: urunJsonLd(u, SITE) }), 200, 1800);
+  }
   const r = await env.DB.prepare("SELECT * FROM pages WHERE section = ?1 AND slug = ?2 AND status = 'published'").bind(sec, slug).first();
   if (!r) return null;
   const faq = JSON.parse(r.faq_json || "[]"), sources = JSON.parse(r.sources_json || "[]");
@@ -336,7 +345,8 @@ async function sitemap(env) {
   const rows = (await env.DB.prepare("SELECT section, slug, updated_at FROM pages WHERE status = 'published'").all()).results || [];
   const today = new Date().toISOString().slice(0, 10);
   const urls = [["/", today, "1.0"], ["/haberler", today, "0.8"], ...Object.keys(SECTIONS).map((s) => [`/${s}`, today, "0.8"]), ["/yasal", "2026-10-26", "0.2"],
-    ...rows.filter((r) => r.section !== "il" && r.section !== "ilce").map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
+    ...URUN_LISTE.map((u) => [`/urun/${u.slug}`, "2026-10-27", "0.7"]),
+    ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
   const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
   const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
   urls.push(...ils.map((i) => [`/il/${i.slug}`, today, "0.7"]));
