@@ -174,7 +174,8 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
   const CINS_SOZ = { Tarla: "tarlalar", Arsa: "arsalar", "Bağ-Bahçe": "bağ ve bahçeler", Zeytinlik: "zeytinlikler", Konut: "evler ve daireler", "İşyeri": "işyerleri", Bina: "binalar" };
   const neler = CINS_SOZ[f.cins] || "tarla, arsa, ev ve işyerleri";
   const h1 = ts ? `${yer || "Türkiye'de"} ${ts} satılık ${neler}` : yer ? `${yer} icradan satılık ${neler}, hazine ihaleleri` : `İcradan satılık ${neler}, hazine ihaleleri`;
-  const baslikSeo = ts ? `${h1} (${ayYil})` : yer ? `${yer} icradan satılık ${neler} (${ayYil})` : `İcradan satılık ${neler} (${ayYil})`;
+  const kisaNe = CINS_SOZ[f.cins] || "tarla, arsa ve evler";
+  const baslikSeo = ts ? `${yer || "Türkiye'de"} ${ts} satılık ${kisaNe} (${ayYil})` : yer ? `${ilceAd || ilAd} icradan satılık ${kisaNe} (${ayYil})` : `İcradan satılık ${kisaNe}, hazine ihaleleri (${ayYil})`;
   const pathBase = sabit.il ? `/ihaleler/${sabit.il}${sabit.ilce ? "/" + sabit.ilce : ""}` : "/ihaleler";
   const qs = (p) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries(f)) if (v && !sabit[k] && !(k === "sira" && v === "tarih")) u.set(k, v); if (p > 1) u.set("sayfa", p); const s = u.toString(); return pathBase + (s ? "?" + s : ""); };
   const sade = sayfa === 1 && !f.tur && !f.kaynak && !f.tip && !f.cins && !f.max && !f.min_m2 && f.sira === "tarih";

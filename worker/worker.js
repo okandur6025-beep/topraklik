@@ -245,7 +245,7 @@ const NAV = [["/ihaleler", "İhaleler"], ["/parsel-sorgu", "Parsel sorgu"], ["/h
 /* Google başlığı ~60–65 karakterden sonra keser: marka eki sığmazsa düşer, çok uzunsa kelime sınırında kısalır */
 function kisaBaslik(t) {
   for (const ek of [" · Topraklık Haber Bülteni", " · Topraklık"]) if (t.length > 65 && t.endsWith(ek)) t = t.slice(0, -ek.length);
-  if (t.length > 68) { t = t.slice(0, 66); t = t.slice(0, t.lastIndexOf(" ")).replace(/[,:;·(\-–]+$/, "").trim(); }
+  if (t.length > 68) { t = t.slice(0, 66); t = t.slice(0, t.lastIndexOf(" ")); const p = t.lastIndexOf("("); if (p > t.lastIndexOf(")")) t = t.slice(0, p); t = t.replace(/[\s,:;·(\-–]+$/, "").trim(); }
   return t;
 }
 /* gezinme yolu (.crumb) işaretlemesinden BreadcrumbList üretir; sayfa kendi verisini vermişse eklemez */
@@ -404,7 +404,7 @@ async function ilPage(env, slug) {
   const faq = [...(c ? JSON.parse(c.faq_json || "[]").map((f) => [f.q, f.a]) : []), ...ilSss(v, il.ad)];
   const sources = c ? JSON.parse(c.sources_json || "[]") : [];
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/il">İller</a> › ${esc(il.ad)}</div>
-<div class="layout"><article><h1>${esc(c?.h1 || `${il.ad}: icradan satılık tarla ve arsalar, arazi değerleri, ne ekilir`)}</h1>
+<div class="layout"><article><h1>${esc(`${il.ad}: icradan satılık tarla ve arsalar, arazi değerleri, ne ekilir`)}</h1>
 ${ilOzet(v, il.ad, esc)}${c?.answer ? `<p>${esc(c.answer)}</p>` : ""}
 <p class="ih-dugmeler"><a class="btn dolu" href="/ihaleler/${slug}">${esc(il.ad)} ihaleleri${v.sayi.toplam ? ` (${nf(v.sayi.toplam)})` : ""}</a> <a class="btn ih-3b" href="/parsel-sorgu?il=${slug}">${esc(il.ad)} ilinde parsel sorgula</a></p>
 ${v.ihaleler.length ? `<h2>${esc(il.ad)} ilindeki güncel ihaleler</h2><div class="ilist">${v.ihaleler.map((x) => ihaleKarti(x, esc)).join("")}</div>${v.sayi.toplam > v.ihaleler.length ? `<p><a href="/ihaleler/${slug}">Tüm ${esc(il.ad)} ihalelerini gör (${nf(v.sayi.toplam)}) →</a></p>` : ""}` : ""}
@@ -422,7 +422,7 @@ ${ilces.length ? `<div class="grid">${ilces.map((x) => `<a class="card" href="/i
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faq.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) }];
   const t = v.emsal.find((e) => e.cins === "Tarla");
   const desc = `${il.ad}: ${v.sayi.toplam ? `${nf(v.sayi.toplam)} güncel icra ve hazine arazi ihalesi` : "icra ve hazine arazi ihaleleri"}${t ? `, tarla m² değeri ortanca ${nf(t.med)} TL` : ""}, ilçelere göre arazi değerleri, ne ekilir (TÜİK), ${ilces.length} ilçe ve 3B parsel sorgu.`;
-  return html(page({ title: c?.title ? `${c.title} · Topraklık` : `${il.ad} icradan satılık tarla, arsa ve arazi değerleri · Topraklık`, description: c?.description || desc, path: `/il/${slug}`, body, current: "/il", jsonld }), 200, 1800);
+  return html(page({ title: `${il.ad} icradan satılık tarla, arsa ve arazi değerleri · Topraklık`, description: desc, path: `/il/${slug}`, body, current: "/il", jsonld }), 200, 1800);
 }
 async function ilcePage(env, ilSlug, ilceSlug) {
   const il = await env.DB.prepare("SELECT * FROM geo_il WHERE slug = ?1").bind(ilSlug).first();
@@ -560,6 +560,14 @@ async function homepage(req, env, originRes) {
   return new Response(res.body, { status: res.status, headers: h });
 }
 
+/* statik kaynak (Pages) bilinmeyen adreslerde eski ana sayfayı 200 ile döndürür; bu "yumuşak 404" Google'da sorun çıkarır */
+function yumusak404(res, path) {
+  if (!(res.headers.get("content-type") || "").includes("text/html") || path === "/yasal" || res.status >= 300) return res;
+  if (path === "/index.html") return new Response(null, { status: 301, headers: { location: "/" } });
+  return html(page({ title: "Sayfa bulunamadı · Topraklık", description: "Aradığınız sayfa bulunamadı.", path, noindex: true, body: `<h1>Sayfa bulunamadı</h1><p class="lead">Aradığınız sayfa taşınmış, kaldırılmış ya da hiç var olmamış olabilir.</p>
+<div class="grid"><a class="card" href="/ihaleler"><b>Güncel ihaleler</b><span>İcra ve hazine satışları</span></a><a class="card" href="/parsel-sorgu"><b>3B parsel sorgu</b><span>Ada ve parselle</span></a><a class="card" href="/il"><b>İller ve ilçeler</b><span>Arazi değerleri, ne ekilir</span></a><a class="card" href="/rehber"><b>Rehberler</b><span>Tapu, ihale, imar</span></a></div>` }), 404, 300);
+}
+
 async function proxy(req, url) {
   const o = new URL(url.pathname + url.search, ORIGIN);
   return fetch(new Request(o, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : req.body, redirect: "manual" }));
@@ -683,10 +691,12 @@ export default {
       }
       const res = await proxy(req, url);
       if (path === "/yasal" && (res.headers.get("content-type") || "").includes("text/html")) { const t = (await res.text()).split('<span class="ph">[Veri sorumlusunun adı soyadı / şirket unvanı]</span>, <span class="ph">[adres]</span>').join("Topraklık Ekibi, Ankara"); return new Response(t, { status: res.status, headers: res.headers }); }
-      return res;
+      return yumusak404(res, path);
     } catch (e) {
       if (url.pathname.startsWith("/admin/")) return Response.json({ hata: e.message, yigin: String(e.stack || "").slice(0, 600) }, { status: 500 });
-      return proxy(req, url);
+      const r = await proxy(req, url);
+      if ((r.headers.get("content-type") || "").includes("text/html") && path !== "/yasal") return html(page({ title: "Geçici bir sorun oluştu · Topraklık", description: "", path, noindex: true, body: `<h1>Geçici bir sorun oluştu</h1><p class="lead">Sayfa şu anda hazırlanamadı. Lütfen birkaç saniye sonra yenileyin.</p><p><a class="btn dolu" href="${esc(path)}">Yenile</a> <a class="btn" href="/">Ana sayfa</a></p>` }), 503, 0, true);
+      return r;
     }
   },
   async scheduled(event, env, ctx) {
