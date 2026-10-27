@@ -104,7 +104,7 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
   let topS = 0, topK = 0;
   for (const o of opts) {
     ils[o.il_slug] = o.il; if (o.il_slug === f.il) ilces[o.ilce_slug] = o.ilce; cinsler[o.cins] = 1;
-    if (o.tip === "satis") topS += o.n; else topK += o.n;
+    if ((!f.il || o.il_slug === f.il) && (!f.ilce || o.ilce_slug === f.ilce)) { if (o.tip === "satis") topS += o.n; else topK += o.n; }
   }
   const ilAd = ils[f.il] || "", ilceAd = ilces[f.ilce] || "";
   const opt = (obj, v, bos) => `<option value="">${bos}</option>` + Object.entries(obj).sort((a, c) => a[1].localeCompare(c[1], "tr")).map(([k, t]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(t)}</option>`).join("");
