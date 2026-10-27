@@ -8,6 +8,7 @@ import { fiyatAdim, urunFiyat } from "./fiyat.js";
 import { milliEmlakTopla } from "./topla.js";
 import { bikAdim, bikDetay } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
+import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
 import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { SATIS_TURU_SQL } from "./ihale.js";
@@ -219,7 +220,7 @@ function page({ title, description, path, body, current, jsonld, noindex }) {
 <header class="top"><div class="wrap"><a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
 <main class="wrap">${body}</main>
-<footer><div class="wrap"><span>© ${new Date().getFullYear()} Topraklık · Toprağa dair ne varsa.</span><span><a href="/yasal">Yasal bilgiler</a> · <a href="mailto:info@topraklik.com">info@topraklik.com</a></span></div></footer>
+<footer><div class="wrap"><span>© ${new Date().getFullYear()} Topraklık · Toprağa dair ne varsa.</span><span><a href="/hakkimizda">Hakkımızda</a> · <a href="/iletisim">İletişim</a> · <a href="/yasal">Yasal bilgiler</a> · <a href="mailto:info@topraklik.com">info@topraklik.com</a></span></div></footer>
 </body></html>`;
 }
 
@@ -265,13 +266,16 @@ function urunListHtml(list, title) {
 async function sectionIndex(env, sec) {
   if (sec === "urun") return urunIndex(env);
   const S = SECTIONS[sec];
-  const rows = (await env.DB.prepare("SELECT slug, title, description FROM pages WHERE section = ?1 AND status = 'published' ORDER BY sort, title").bind(sec).all()).results || [];
+  let rows = [];
+  try { rows = (await env.DB.prepare("SELECT slug, title, description FROM pages WHERE section = ?1 AND status = 'published' ORDER BY sort, title").bind(sec).all()).results || []; } catch (e) {}
+  if (sec === "rehber") rows = [...rows.filter((r) => !REHBER[r.slug]), ...REHBER_LISTE.map((r) => ({ slug: r.slug, title: r.h1, description: r.desc }))];
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › ${esc(S.name)}</div><h1>${esc(S.name)}</h1><p class="lead">${esc(S.lead)}</p>
 ${rows.length ? `<div class="grid">${rows.map((r) => `<a class="card" href="/${sec}/${r.slug}"><b>${esc(r.title)}</b><span>${esc(r.description)}</span></a>`).join("")}</div>` : `<p class="note">Bu bölümün sayfaları hazırlanıyor.</p>`}`;
   return html(page({ title: `${S.name} · Topraklık`, description: S.lead, path: `/${sec}`, body, current: `/${sec}` }));
 }
 
 async function contentPage(env, sec, slug) {
+  if (sec === "rehber" && REHBER[slug]) return rehberSayfa(slug, { esc, page, html, SITE });
   if (sec === "urun" && URUN[slug]) {
     const u = fiyatUygula(URUN[slug], await urunFiyat(env, slug));
     const related = URUN_LISTE.filter((x) => x.kat === u.kat && x.slug !== slug).slice(0, 14);
@@ -355,7 +359,8 @@ async function sitemap(env) {
   const today = new Date().toISOString().slice(0, 10);
   const urls = [["/", today, "1.0"], ["/haberler", today, "0.8"], ...Object.keys(SECTIONS).map((s) => [`/${s}`, today, "0.8"]), ["/yasal", "2026-10-26", "0.2"],
     ...URUN_LISTE.map((u) => [`/urun/${u.slug}`, "2026-10-27", "0.7"]),
-    ["/araclar", today, "0.8"], ["/parsel-sorgu", today, "0.9"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
+    ...REHBER_LISTE.map((r) => [`/rehber/${r.slug}`, today, "0.8"]),
+    ["/araclar", today, "0.8"], ["/hakkimizda", today, "0.3"], ["/iletisim", today, "0.3"], ["/parsel-sorgu", today, "0.9"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
     ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
   const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
   const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
@@ -368,6 +373,7 @@ async function sitemap(env) {
 
 /* ---------- ana sayfaya eklenenler ---------- */
 const INJECT_CSS = `<style>
+#ihaleler-ornek,#sonuclar{display:none!important}
 .tk-bar{background:#1F3A22;color:#F3EEE2;font:600 13.5px/1 Manrope,"Segoe UI",sans-serif;overflow:hidden;position:relative;z-index:51}
 .tk-in{display:flex;align-items:center;gap:0;height:36px;white-space:nowrap}
 .tk-lbl{flex:none;background:#B8892E;color:#fff;padding:0 12px;height:36px;display:flex;align-items:center;font-weight:800;letter-spacing:.04em;font-size:12px}
@@ -416,13 +422,13 @@ async function homepage(req, env, originRes) {
   let ihl = { rows: [], sayi: {} };
   try { items = await tickerItems(env); news = await latestNews(env, { limit: 6 }); ihl = await ihaleAnaSayfa(env); } catch (e) {}
   const tk = tickerHtml(items), nb = newsBoxHtml(news);
-  const ib = ihl.rows.length ? `<section class="tk-news" id="gercek-ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel tarla ve arsa ihaleleri</h2><div class="sec-sub">İcradan ve mahkemeden satılık ${(ihl.sayi.icra || 0).toLocaleString("tr-TR")} tarla ve arsa, Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
+  const ib = ihl.rows.length ? `<section class="tk-news" id="ihaleler"><div class="wrap"><div class="sec-head"><div><div class="coord">GERÇEK İLANLAR · HER GÜN GÜNCELLENİR</div><h2 class="sec-title">Güncel tarla ve arsa ihaleleri</h2><div class="sec-sub">İcradan ve mahkemeden satılık ${(ihl.sayi.icra || 0).toLocaleString("tr-TR")} tarla ve arsa, Milli Emlak'ın ${(ihl.sayi.satis || 0).toLocaleString("tr-TR")} satış ve ${(ihl.sayi.kira || 0).toLocaleString("tr-TR")} kiralama ilanı; il ve ilçeye göre arayın.</div></div><a class="btn btn-gold" href="/ihaleler">Tüm ihaleler →</a></div><div class="tk-grid">${ihl.rows.map((x) => anaKart(x, esc)).join("")}</div></div></section>` : "";
   const navLinks = `<li><a href="/ihaleler">İhaleler</a></li><li><a href="/haberler">Haberler</a></li><li><a href="/rehber">Rehber</a></li>`;
   const res = new HTMLRewriter()
     .on("head", { element(e) { e.append(INJECT_CSS, { html: true }); } })
     .on("body", { element(e) { if (tk) e.prepend(tk, { html: true }); } })
     .on("header.top .nav ul", { element(e) { e.append(navLinks, { html: true }); } })
-    .on("section#ihaleler", { element(e) { if (ib) e.before(ib, { html: true }); if (nb) e.before(nb, { html: true }); } })
+    .on("section#ihaleler", { element(e) { e.setAttribute("id", "ihaleler-ornek"); if (ib) e.before(ib, { html: true }); if (nb) e.before(nb, { html: true }); } })
     .transform(originRes);
   const h = new Headers(res.headers); h.set("cache-control", "public, max-age=300"); h.delete("content-length");
   return new Response(res.body, { status: res.status, headers: h });
@@ -433,6 +439,17 @@ async function proxy(req, url) {
   return fetch(new Request(o, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : req.body, redirect: "manual" }));
 }
 
+const HAKKIMIZDA = `<div class="crumb"><a href="/">Ana sayfa</a> › Hakkımızda</div><article><h1>Topraklık hakkında</h1>
+<p class="answer">Topraklık, toprağa dair bilgiyi tek yerde toplayan bağımsız bir platformdur: icra ve hazine arazi ihaleleri, parsel sorgulama, tarım rehberleri, piyasa fiyatları ve hesaplama araçları.</p>
+<h2>Ne yapıyoruz?</h2><ul><li>İcra dairesi, sulh hukuk ve diğer mahkeme satışlarındaki tarla ve arsaları; Milli Emlak'ın hazine satış ve kiralama ihalelerini her gün kaynaklarından derleyip il ve ilçeye göre aranabilir hâle getiriyoruz.</li><li>117 ürün için ekim, bakım, bölge ve tahmini kazanç bilgisi sunuyoruz; fiyatları ticaret borsaları ve resmî alım fiyatlarıyla güncelliyoruz.</li><li>Tapu, imar, hisseli mülkiyet ve tarım arazisi mevzuatını anlaşılır rehberlerle anlatıyoruz.</li></ul>
+<h2>Verilerimizin kaynakları</h2><ul><li>İhale ilanları: Basın İlan Kurumu (ilan.gov.tr), UYAP e-Satış ilanları, Milli Emlak Genel Müdürlüğü</li><li>İdari bölünme ve parsel: Tapu ve Kadastro Genel Müdürlüğü</li><li>Üretim ve verim: TÜİK Bitkisel Üretim İstatistikleri</li><li>Fiyatlar: TOBB ticaret borsaları, TMO, Türkşeker, ÇAYKUR, İzmir Büyükşehir Belediyesi hal fiyatları</li><li>Mevzuat: mevzuat.gov.tr ve Resmî Gazete</li></ul>
+<p>Her ilan ve veri sayfasında kaynağa bağlantı ve güncellenme tarihi yer alır. Topraklık resmî bir kurum değildir; ihalelerin tarafı veya aracısı değildir. Teklif vermeden veya yatırım kararı almadan önce ilanın aslını ve ilgili kurumu kontrol edin.</p>
+<h2>Biz kimiz?</h2><p>Topraklık, Ankara merkezli küçük bir ekip tarafından geliştirilmektedir. Öneri, düzeltme ve iş birliği talepleriniz için <a href="/iletisim">iletişim</a> sayfasından bize ulaşabilirsiniz.</p></article>`;
+const ILETISIM = `<div class="crumb"><a href="/">Ana sayfa</a> › İletişim</div><article><h1>İletişim</h1>
+<p>Topraklık ekibine aşağıdaki adreslerden ulaşabilirsiniz. E-postalara genellikle iki iş günü içinde dönüş yapıyoruz.</p>
+<ul><li><b>Genel, öneri ve iş birliği:</b> <a href="mailto:info@topraklik.com">info@topraklik.com</a></li><li><b>Hatalı ilan veya bilgi bildirimi:</b> <a href="mailto:duzeltme@topraklik.com">duzeltme@topraklik.com</a></li><li><b>Kişisel veriler (KVKK) başvuruları:</b> <a href="mailto:kvkk@topraklik.com">kvkk@topraklik.com</a></li></ul>
+<p class="note">Topraklık ihalelerin tarafı değildir. İhaleye katılım, teminat ve ödeme işlemleri için ilanda belirtilen icra dairesi, satış memurluğu veya Milli Emlak müdürlüğüyle görüşmelisiniz.</p></article>`;
+
 /* Kenar önbelleği: aynı sayfa için veritabanı her ziyarette okunmasın (D1 ücretsiz okuma sınırı) */
 function onbellekSuresi(path) {
   if (path === "/") return 600;
@@ -440,7 +457,7 @@ function onbellekSuresi(path) {
   if (path.startsWith("/haberler")) return 900;
   if (path.startsWith("/ihaleler/ilan/")) return 21600;
   if (path.startsWith("/ihaleler")) return 1800;
-  if (/^\/(il|urun|rehber|hibe|araclar|parsel-sorgu)(\/|$)/.test(path)) return 21600;
+  if (/^\/(il|urun|rehber|hibe|araclar|parsel-sorgu|hakkimizda|iletisim)(\/|$)/.test(path)) return 21600;
   return 0;
 }
 
@@ -485,6 +502,8 @@ export default {
         if (req.method !== "POST" || !env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401, headers: cors });
         try { return Response.json(await ihaleYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
       }
+      if (path === "/hakkimizda") return html(page({ title: "Hakkımızda · Topraklık", description: "Topraklık; icra ve hazine arazi ihalelerini, parsel bilgisini, tarım rehberlerini ve piyasa fiyatlarını tek yerde toplayan bağımsız bir platformdur.", path: "/hakkimizda", body: HAKKIMIZDA, current: "" }), 200, 86400);
+      if (path === "/iletisim") return html(page({ title: "İletişim · Topraklık", description: "Topraklık ile iletişim: öneri, düzeltme ve iş birliği için e-posta adresleri.", path: "/iletisim", body: ILETISIM, current: "" }), 200, 86400);
       if (path === "/araclar") return aracIndex({ esc, page, html });
       if (path === "/parsel-sorgu") return parselSorgu({ esc, page, html });
       const ar = path.match(/^\/araclar\/([a-z0-9-]+)$/);
