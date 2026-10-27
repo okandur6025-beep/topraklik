@@ -138,7 +138,7 @@ rehber(slug="icradan-ev-almak", title="İcradan ev, arsa veya tarla almak mantı
  cevap="İcradan taşınmaz almak çoğu zaman piyasanın altında fiyat sunar; ilk ve ikinci artırmada muhammen bedelin %50'sinden teklif verilebilir. Buna karşılık KDV ve harçlar, tahliye süreci, ihalenin feshi riski ve taşınmazı görmeden alma gibi riskler vardır.",
  bolumler=[
   ("Avantajlar", "- Piyasa değerinin altında alma imkânı\n- Haciz şerhlerinin ihaleyle kaldırılması\n- Yasal önalım hakkının işlememesi\n- Satışların UYAP e-Satış'ta şeffaf yapılması"),
-  ("Riskler", "- Taşınmazı içeriden görme imkânının sınırlı olması\n- İçinde oturan borçlunun veya kiracının tahliyesi gerekebilmesi\n- KDV (arsa ve tarlada çoğunlukla %10) ve tapu harcı gibi ek masraflar\n- 7 gün içinde açılabilecek ihalenin feshi davası nedeniyle tescilin gecikmesi\n- Ödemeyi süresinde yapmazsanız teminatın yanması ve fark sorumluluğu"),
+  ("Riskler", "- Taşınmazı içeriden görme imkânının sınırlı olması\n- İçinde oturan borçlunun veya kiracının tahliyesi gerekebilmesi\n- KDV (ilanda yazıyorsa; arsa ve tarlada genel oran %20) ve tapu harcı gibi ek masraflar\n- 7 gün içinde açılabilecek ihalenin feshi davası nedeniyle tescilin gecikmesi\n- Ödemeyi süresinde yapmazsanız teminatın yanması ve fark sorumluluğu"),
   ("Toplam maliyet", "Teklif bedeline KDV, tapu harcı (%2), damga vergisi ve teslim masrafları eklenir. Toplamı [icra ihalesi maliyet hesaplama aracıyla](/araclar/icra-ihalesi-maliyet-hesaplama) görebilirsiniz."),
   ("Nereden bakılır?", "Güncel icra ve mahkeme satışlarını il ve ilçeye göre [icradan satılık tarla ve arsalar](/ihaleler?tur=icra) sayfasında, adım adım katılım için [icra ihalesine nasıl girilir](/rehber/icra-ihalesine-nasil-girilir) rehberinde bulabilirsiniz."),
  ],
