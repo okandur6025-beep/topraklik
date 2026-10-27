@@ -12,7 +12,7 @@ import { REHBER, REHBER_LISTE, rehberSayfa } from "./rehber.js";
 import { ARACLAR, aracSayfa, aracIndex, parselSorgu } from "./araclar.js";
 import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { SATIS_TURU_SQL } from "./ihale.js";
-import { haberAdim, haberSema, haberYaz, haberKart, haberOne, haberBasliklar, haberDetay, haberGorsel, HABER_CSS } from "./haber.js";
+import { haberAdim, haberSema, haberYaz, haberKart, bulten, bultenUst, haberBasliklar, haberDetay, HABER_CSS } from "./haber.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
@@ -146,7 +146,7 @@ async function geoStep(env) {
   return `${ilce.ad}: ${mahs.length} mahalle`;
 }
 
-const NEWS_COLS = "id, title, source, url, published_at, category, ozet, onem, konu";
+const NEWS_COLS = "id, title, source, url, published_at, category, ozet, onem, konu, kimler";
 async function latestNews(env, o = {}) {
   try { return await latestNews0(env, o); } catch (e) {
     if (!/no such column/i.test(e.message)) throw e;
@@ -251,20 +251,16 @@ async function newsPage(env, url) {
   let rows = [], dbHata = false;
   try { rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 }); } catch (e) { dbHata = true; }
   if (/^\?onizleme=tk27(&v=\d+)?$/.test(url.search) && env.AI) { /* geçici önizleme: ilk 5 habere özet yaz, kaydetme */
-    if (dbHata) { for (const f of [FEEDS[0], FEEDS[3], FEEDS[1]]) { try { const r = await fetch(f.url, { headers: { "user-agent": UA } }); rows.push(...parseRss((await r.text()).slice(0, 120000)).slice(0, 4).map((it) => ({ ...it, id: fnv(normTitle(it.title)), category: f.cat, source: it.source === "Kaynak" && f.name ? f.name : it.source, summary: it.desc }))); } catch (e) {} } }
-    const z = await Promise.all(rows.slice(0, 5).map((n) => haberYaz(env, n).catch((e) => ({ hata: e.message }))));
-    rows = rows.map((n, i) => (z[i] && !z[i].hata && z[i].alakali ? { ...n, ...z[i], id: n.id } : i < 5 ? { ...n, _h: z[i]?.hata ? z[i].hata + " | " + (z[i].ham || "") : "alakasız" } : n));
+    if (dbHata) { for (const f of [FEEDS[3], FEEDS[1], FEEDS[0], FEEDS[2]]) { try { const r = await fetch(f.url, { headers: { "user-agent": UA } }); rows.push(...parseRss((await r.text()).slice(0, 120000)).slice(0, 4).map((it) => ({ ...it, id: fnv(normTitle(it.title)), category: f.cat, source: it.source === "Kaynak" && f.name ? f.name : it.source, summary: it.desc }))); } catch (e) {} } }
+    const z = await Promise.all(rows.slice(0, 8).map((n) => haberYaz(env, n).catch((e) => ({ hata: e.message }))));
+    rows = rows.map((n, i) => (z[i] && !z[i].hata && z[i].alakali ? { ...n, ...z[i], id: n.id } : i < 8 ? { ...n, _h: z[i]?.hata ? z[i].hata + " | " + (z[i].ham || "") : "alakasız" } : n));
   }
   const tabs = `<nav class="tabs" aria-label="Kategoriler"><a href="/haberler"${!cat ? ' aria-current="page"' : ""}>Tümü</a>${Object.entries(CATS).map(([k, v]) => `<a href="/haberler?kategori=${k}"${cat === k ? ' aria-current="page"' : ""}>${v}</a>`).join("")}</nav>`;
   const more = rows.length === 40 ? `<p><a href="/haberler?${cat ? `kategori=${cat}&` : ""}sayfa=${p + 1}">Daha eski haberler →</a></p>` : "";
-  const ctx = { esc, ago, CATS };
-  const zengin = rows.filter((n) => n.ozet), yalin = rows.filter((n) => !n.ozet);
-  const one = p === 1 && zengin.length > 3 ? zengin.find((n) => n.onem && ["arazi", "destek", "fiyat"].includes(n.category)) || zengin[0] : null;
-  const kartlar = zengin.filter((n) => n !== one);
-  const govde = !rows.length ? (dbHata ? `<p class="note">Haberler şu anda güncelleniyor, lütfen biraz sonra tekrar bakın.</p>` : newsList([])) : `${one ? haberOne(one, ctx) : ""}${kartlar.length ? `<div class="hb-grid">${kartlar.map((n) => haberKart(n, ctx)).join("")}</div>` : ""}${yalin.length ? `<h2>${zengin.length ? "Diğer başlıklar" : "Son başlıklar"}</h2>${haberBasliklar(yalin, ctx)}` : ""}`;
-  const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Haberler</div><h1>${cat ? esc(CATS[cat]) + " haberleri" : "Tarım ve arazi haberleri"}</h1>
-${rows.filter((n) => n._h || n.model).map((n) => `<!-- hata: ${esc(String(n._h || "model " + n.model))} -->`).join("")}<p class="lead">Gündemi sizin için süzüyoruz: her haberin kısa özeti ve çiftçi, üretici ya da arazi sahibi için neden önemli olduğu. Haberin tamamına kaynağından ulaşabilirsiniz.</p>${tabs}${govde}${more}`;
-  return html(page({ title: `${cat ? CATS[cat] + " haberleri" : "Tarım ve arazi haberleri, özetler"} · Topraklık`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600, dbHata);
+  const ctx = { esc, ago, CATS, cat };
+  const govde = !rows.length ? (dbHata ? `<p class="note">Haberler şu anda güncelleniyor, lütfen biraz sonra tekrar bakın.</p>` : newsList([])) : bulten(rows, ctx);
+  const body = `${rows.filter((n) => n._h || n.model).map((n) => `<!-- hata: ${esc(String(n._h || "model " + n.model))} -->`).join("")}<div class="crumb"><a href="/">Ana sayfa</a> › Haber Bülteni</div>${bultenUst({ esc, CATS, cat, tabs })}${govde}${more}`;
+  return html(page({ title: `${cat ? CATS[cat] + " · " : ""}Topraklık Haber Bülteni: tarım, hibe, fiyat ve arazi haberleri`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600, dbHata);
 }
 
 const URUN_KAT = ["Tahıllar", "Baklagiller", "Yağlı tohumlar", "Endüstri bitkileri", "Yem bitkileri", "Sebzeler", "Meyveler", "Sert kabuklular", "Tıbbi ve aromatik bitkiler", "Yeni ve alternatif ürünler"];
@@ -436,7 +432,7 @@ function newsBoxHtml(rows) {
   if (!rows.length) return "";
   const ctx = { esc, ago, CATS };
   const sec = [...rows.filter((n) => n.ozet), ...rows.filter((n) => !n.ozet)].slice(0, 3);
-  return `<section class="tk-news" id="haberler-kutu"><div class="wrap"><div class="sec-head"><div><h2 class="sec-title">Tarımda bugün</h2><p class="sec-sub">Günün tarım, hibe, fiyat ve arazi haberleri; kısa özet ve neden önemli olduğu</p></div><a class="btn btn-line" href="/haberler">Tüm haberler →</a></div>
+  return `<section class="tk-news" id="haberler-kutu"><div class="wrap"><div class="sec-head"><div><h2 class="sec-title">Topraklık Haber Bülteni</h2><p class="sec-sub">Günün tarım, hibe, fiyat ve arazi haberleri; kısa özet ve sizin için neden önemli olduğu</p></div><a class="btn btn-line" href="/haberler">Tüm haberler →</a></div>
 <div class="hb-grid">${sec.map((n) => haberKart(n, ctx)).join("")}</div></div></section>`;
 }
 
