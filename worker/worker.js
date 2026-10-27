@@ -472,6 +472,7 @@ export default {
       if (path === "/" && req.method === "GET" && (res.headers.get("content-type") || "").includes("text/html")) return homepage(req, env, res);
       return res;
     } catch (e) {
+      if (url.pathname.startsWith("/admin/")) return Response.json({ hata: e.message, yigin: String(e.stack || "").slice(0, 600) }, { status: 500 });
       return proxy(req, url);
     }
   },
