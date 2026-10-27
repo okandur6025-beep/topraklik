@@ -8,6 +8,7 @@ import { fiyatAdim, urunFiyat } from "./fiyat.js";
 import { milliEmlakTopla } from "./topla.js";
 import { bikAdim, bikDetay } from "./bik.js";
 import { uyapAdim } from "./uyap.js";
+import { ilceYukle, ilceUrunleri, ilceUrunHtml, urunIlceVerim } from "./ilceuretim.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
 const SITE = "https://topraklik.com";
@@ -272,7 +273,7 @@ async function contentPage(env, sec, slug) {
   if (sec === "urun" && URUN[slug]) {
     const u = fiyatUygula(URUN[slug], await urunFiyat(env, slug));
     const related = URUN_LISTE.filter((x) => x.kat === u.kat && x.slug !== slug).slice(0, 14);
-    const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/urun">Ürün rehberleri</a> › <a href="/urun#${slugify(u.kat)}">${esc(u.kat)}</a> › ${esc(u.ad)}</div>${urunPage(u, { esc, IL_AD, related })}`;
+    const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/urun">Ürün rehberleri</a> › <a href="/urun#${slugify(u.kat)}">${esc(u.kat)}</a> › ${esc(u.ad)}</div>${urunPage(u, { esc, IL_AD, related, iv: await urunIlceVerim(env, slug) })}`;
     return html(page({ title: `${u.title || u.ad + " yetiştiriciliği: nerede, nasıl yetişir, ne kazandırır?"} · Topraklık`, description: u.description || u.ozet, path: `/urun/${slug}`, body, current: "/urun", jsonld: urunJsonLd(u, SITE) }), 200, 1800);
   }
   const r = await env.DB.prepare("SELECT * FROM pages WHERE section = ?1 AND slug = ?2 AND status = 'published'").bind(sec, slug).first();
@@ -337,6 +338,7 @@ async function ilcePage(env, ilSlug, ilceSlug) {
 <div class="layout"><article><h1>${esc(c?.h1 || `${ilce.ad} (${il.ad}) mahalleleri, köyleri ve arazileri`)}</h1>${c?.answer ? `<p class="answer">${esc(c.answer)}</p>` : ""}
 <p class="note">${esc(ilce.ad)}, ${esc(il.ad)}: ${mahs.length ? mahs.length + " mahalle ve köy" : "mahalle listesi yükleniyor"}. ${ilce.lat ? `<a href="${mapLink(ilce.lat, ilce.lng, 11)}" target="_blank" rel="noopener">Haritada gör</a>` : ""}</p>
 ${c ? c.body_html : ""}
+${ilceUrunHtml(await ilceUrunleri(env, ilSlug, ilceSlug), ilce.ad, esc)}
 ${urunListHtml(await ilUrunleri(env, ilSlug), `${ilce.ad} ve ${il.ad} çevresinde yetişen ürünler`)}
 <p class="note">Ürün seçimi ilçe içinde de rakım, sulama ve toprağa göre değişir; kesin karar için toprak analizi yaptırın ve ilçe tarım müdürlüğüne danışın.</p>
 <h2>${esc(ilce.ad)} mahalle ve köyleri</h2>${mahs.length ? `<ul style="columns:3 180px;padding-left:18px">${mahs.map((m) => `<li>${esc(m.ad)}</li>`).join("")}</ul>` : `<p>Liste yükleniyor.</p>`}
@@ -438,6 +440,12 @@ export default {
       if (path === "/haberler") return newsPage(env, url);
       if (path === "/sitemap.xml") return sitemap(env);
       if (path === "/topla/milliemlak.js") return new Response(`const __name = (f) => f;\nreturn (${milliEmlakTopla.toString()})(KEY);`, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store", ...ihaleCors(req) } });
+      if (path === "/admin/ilce-uretim") {
+        const o = req.headers.get("origin") || "", cors = o === "https://biruni.tuik.gov.tr" ? { "access-control-allow-origin": o, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type, x-admin-key" } : {};
+        if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+        if (req.method !== "POST" || !env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401, headers: cors });
+        try { return Response.json(await ilceYukle(env, await req.json(), slugify), { headers: cors }); } catch (e) { return Response.json({ hata: e.message }, { status: 400, headers: cors }); }
+      }
       if (path === "/admin/ihale-yukle") {
         const cors = ihaleCors(req);
         if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });

@@ -48,7 +48,7 @@ export function fiyatUygula(u, rows) {
   return yeni;
 }
 
-function kazancHtml(u, esc) {
+function kazancHtml(u, esc, iv) {
   const z = u.kazanc;
   if (!z) return "";
   const mods = Object.keys(z.verim).filter((k) => k !== "aralik");
@@ -58,6 +58,7 @@ function kazancHtml(u, esc) {
   return `<h2 id="kazanc">${esc(u.ad)} ne kadar kazandırır? Tahmini hesap</h2>
 <p>Varsayılan değerlerle 1 dekarda (1 dönüm = 1.000 m²) ${esc(MOD[d.mod]?.toLowerCase() || "")} üretimde tahmini brüt gelir <b>${tl(d.gelir)}</b>, üretim masrafı <b>${tl(d.maliyet)}</b>${z.destek ? `, destek <b>${tl(z.destek)}</b>` : ""}; geriye kalan <b>${tl(d.net)}</b>. Kendi alanınızı ve bölgenizdeki fiyatı girerek hesaplayın:</p>
 <div class="calc" id="kCalc">${sel}
+${iv?.rows?.length ? `<label style="grid-column:1/-1">İlçenizin ortalama verimi (TÜİK ${iv.yil})<select id="kIlce"><option value="">İlçe seçin; verim kutusuna yazılsın</option>${Object.entries(iv.rows.reduce((o, r) => ((o[r[0]] ||= []).push(r), o), {})).map(([il, xs]) => `<optgroup label="${esc(IL_AD[il] || il)}">${xs.map((r) => `<option value="${r[2]}">${esc(r[1])}: ${r[2].toLocaleString("tr-TR")} kg/da</option>`).join("")}</optgroup>`).join("")}</select></label>` : ""}
 <label>Alan (dekar / dönüm)<input id="kDa" type="number" min="0" step="0.5" value="10"></label>
 <label>Verim (${esc(z.birim || "kg")}/dekar)<input id="kV" type="number" min="0" step="any"></label>
 <label>Satış fiyatı (TL/${esc(z.birim || "kg")})<input id="kF" type="number" min="0" step="any"></label>
@@ -78,7 +79,17 @@ ${z.notu ? `<li>${esc(z.notu)}</li>` : ""}</ul>
 const pick=(o,m)=>typeof o==="object"?o[m]:o;function set(){const m=$("kMod").value;$("kV").value=pick(Z.verim,m);$("kF").value=pick(Z.fiyat,m);$("kM").value=pick(Z.maliyet,m);calc()}
 function calc(){const a=+$("kDa").value||0,v=+$("kV").value||0,p=+$("kF").value||0,c=+$("kM").value||0,d=+$("kD").value||0,k=+$("kK").value||0;
 const g=a*v*p,t=a*(c+k),n=g-t+a*d;$("kOut").innerHTML="<div><span>Ürün</span><b>"+(+(a*v).toFixed(a*v<10?2:0)).toLocaleString("tr-TR")+" ${esc(z.birim || "kg")}</b></div><div><span>Brüt gelir</span><b>"+f(g)+"</b></div><div><span>Masraf"+(k?" + kira":"")+"</span><b>"+f(t)+"</b></div>"+(d?"<div><span>Destek</span><b>"+f(a*d)+"</b></div>":"")+"<div class=net><span>Tahmini net</span><b>"+f(n)+"</b></div><div><span>Dekar başına net</span><b>"+f(a?n/a:0)+"</b></div>"}
-$("kMod").addEventListener("change",set);["kDa","kV","kF","kM","kD","kK"].forEach(i=>$(i).addEventListener("input",calc));set()})()</script>`;
+$("kMod").addEventListener("change",set);const ic=$("kIlce");ic&&ic.addEventListener("change",()=>{if(ic.value){$("kV").value=ic.value;calc()}});["kDa","kV","kF","kM","kD","kK"].forEach(i=>$(i).addEventListener("input",calc));set()})()</script>`;
+}
+
+function ilceVerimTablo(iv, u, esc) {
+  if (!iv?.rows?.length) return "";
+  const top = [...iv.rows].filter((r) => r[3] >= 1000).sort((a, b) => b[2] - a[2]).slice(0, 10);
+  const genis = [...iv.rows].sort((a, b) => b[3] - a[3]).slice(0, 10);
+  const satir = (r) => `<tr><td>${esc(IL_AD[r[0]] || r[0])} / ${esc(r[1])}</td><td>${r[2].toLocaleString("tr-TR")} kg/da</td><td>${r[3].toLocaleString("tr-TR")} da</td></tr>`;
+  return `<h2>${esc(u.ad)} en çok hangi ilçelerde ekiliyor? (TÜİK ${iv.yil})</h2><table><thead><tr><th>İl / ilçe</th><th>Verim</th><th>Ekilen alan</th></tr></thead><tbody>${genis.map(satir).join("")}</tbody></table>
+${top.length ? `<h3>En yüksek verim alınan ilçeler</h3><p>En az 1.000 dekar ekilen ilçeler arasında:</p><table><thead><tr><th>İl / ilçe</th><th>Verim</th><th>Ekilen alan</th></tr></thead><tbody>${top.map(satir).join("")}</tbody></table>` : ""}
+<p class="src">Kaynak: TÜİK Bitkisel Üretim İstatistikleri, ilçe düzeyi (${iv.yil}). Toplam ${iv.rows.length} ilçede ekim yapıldı.</p>`;
 }
 
 export const URUN_CSS = `.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}.facts div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.facts span{display:block;font-size:12px;color:var(--muted)}.facts b{font-size:14.5px}
@@ -86,7 +97,7 @@ export const URUN_CSS = `.facts{display:grid;grid-template-columns:repeat(auto-f
 .calc .out{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.calc .out div{background:var(--card);border-radius:10px;padding:10px 12px}.calc .out span{display:block;font-size:12px;color:var(--muted)}.calc .out b{font-size:17px}.calc .out .net{background:var(--green);color:#fff}.calc .out .net span{color:#e6efe0}
 ul.kz{font-size:14.5px;padding-left:18px}ul.kz li{margin:4px 0}.chips a{display:inline-block;margin:0 6px 8px 0;text-decoration:none}`;
 
-export function urunPage(u, { esc, IL_AD, related }) {
+export function urunPage(u, { esc, IL_AD, related, iv }) {
   const ilLinks = (xs) => xs.map((x) => `<a class="tag" href="/il/${x}">${esc(IL_AD[x] || x)}</a>`).join("");
   const sec = (t, s) => (s ? `<h2>${t}</h2>${String(s).split("\n\n").map((p) => `<p>${esc(p)}</p>`).join("")}` : "");
   const z = u.kazanc;
@@ -97,7 +108,7 @@ ${sec("İklim isteği", u.iklim)}${sec("Toprak isteği", u.toprak)}${sec("Ekim v
 ${u.bolge.length ? `<h2>Bölgelere göre ${esc(u.ad.toLocaleLowerCase("tr"))} yetiştiriciliği</h2><table><thead><tr><th>Bölge</th><th>Durum ve zamanlama</th></tr></thead><tbody>${u.bolge.map(([b, t]) => `<tr><td>${esc(b)}</td><td>${esc(t)}</td></tr>`).join("")}</tbody></table>` : ""}
 ${u.yaygin.length || u.uygun.length ? `<h2>Hangi illerde yetişir?</h2>${u.yaygin.length ? `<p><b>En çok üretildiği iller:</b></p><p class="chips">${ilLinks(u.yaygin)}</p>` : ""}${u.uygun.length ? `<p><b>Uygun koşullarda yetiştirilebileceği iller:</b></p><p class="chips">${ilLinks(u.uygun)}</p>` : ""}<p>İl içinde rakım, sulama ve toprağa göre büyük farklar olur. İlçe ve köy düzeyinde karar vermeden önce toprak analizi yaptırın.</p>` : ""}
 ${u.ilce ? sec("İlçe düzeyinde öne çıkan yerler", u.ilce) : ""}
-${kazancHtml(u, esc)}
+${kazancHtml(u, esc, iv)}${ilceVerimTablo(iv, u, esc)}
 ${u.dikkat ? `<p class="note"><b>Dikkat:</b> ${esc(u.dikkat)}</p>` : ""}
 ${u.sss.length ? `<h2>Sık sorulan sorular</h2>${u.sss.map((f) => `<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join("")}` : ""}
 <div class="src">Son güncelleme: ${esc(u.guncel || "Ekim 2026")} · Kaynaklar: ${u.kaynak.map(([n, l]) => `<a href="${esc(l)}" target="_blank" rel="noopener">${esc(n)}</a>`).join(", ")}<br>Bu sayfa bilgilendirme amaçlıdır; ekim kararı öncesi il/ilçe tarım müdürlüğüne danışın.</div>
