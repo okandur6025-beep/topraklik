@@ -263,7 +263,7 @@ async function newsPage(env, url) {
   const kartlar = zengin.filter((n) => n !== one);
   const govde = !rows.length ? (dbHata ? `<p class="note">Haberler şu anda güncelleniyor, lütfen biraz sonra tekrar bakın.</p>` : newsList([])) : `${one ? haberOne(one, ctx) : ""}${kartlar.length ? `<div class="hb-grid">${kartlar.map((n) => haberKart(n, ctx)).join("")}</div>` : ""}${yalin.length ? `<h2>${zengin.length ? "Diğer başlıklar" : "Son başlıklar"}</h2>${haberBasliklar(yalin, ctx)}` : ""}`;
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Haberler</div><h1>${cat ? esc(CATS[cat]) + " haberleri" : "Tarım ve arazi haberleri"}</h1>
-${rows.filter((n) => n._h).map((n) => `<!-- hata: ${esc(String(n._h))} -->`).join("")}<p class="lead">Gündemi sizin için süzüyoruz: her haberin kısa özeti ve çiftçi, üretici ya da arazi sahibi için neden önemli olduğu. Haberin tamamına kaynağından ulaşabilirsiniz.</p>${tabs}${govde}${more}`;
+${rows.filter((n) => n._h || n.model).map((n) => `<!-- hata: ${esc(String(n._h || "model " + n.model))} -->`).join("")}<p class="lead">Gündemi sizin için süzüyoruz: her haberin kısa özeti ve çiftçi, üretici ya da arazi sahibi için neden önemli olduğu. Haberin tamamına kaynağından ulaşabilirsiniz.</p>${tabs}${govde}${more}`;
   return html(page({ title: `${cat ? CATS[cat] + " haberleri" : "Tarım ve arazi haberleri, özetler"} · Topraklık`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600, dbHata);
 }
 

@@ -4,7 +4,8 @@
  * Kaynağın metni ya da görseli sitede yayımlanmaz; yalnız bizim özetimiz ve kaynağa bağlantı. */
 import { URUN_LISTE, IL_AD } from "./urun.js";
 
-export const AI_MODEL = "@cf/google/gemma-3-12b-it";
+export const AI_MODELLER = ["@cf/meta/llama-4-scout-17b-16e-instruct", "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/mistralai/mistral-small-3.1-24b-instruct", "@cf/meta/llama-3.1-8b-instruct-fast"];
+let calisanModel = null;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
 
 /* ---------- Konu çizimleri (kendi SVG'lerimiz) ---------- */
@@ -76,17 +77,23 @@ export function jsonCoz(t) {
   try { return JSON.parse(s.slice(i, j + 1)); } catch { return null; }
 }
 
-export async function haberYaz(env, n, model = AI_MODEL) {
+export async function haberYaz(env, n, model) {
   let kaynak = "";
   try { kaynak = await kaynakMetni(n.url); } catch (e) {}
   if (!kaynak && n.summary) kaynak = n.summary;
   const icerik = `Başlık: ${n.title}\nKaynak: ${n.source}\nTarih: ${n.published_at?.slice(0, 10)}\n\nKaynak metinden parçalar:\n${kaynak || "(metin alınamadı; yalnız başlığa dayan, kısa yaz)"}`;
-  const r = await env.AI.run(model, { messages: [{ role: "system", content: SISTEM }, { role: "user", content: icerik }], max_tokens: 500, temperature: 0.2 });
+  const sira = model ? [model] : calisanModel ? [calisanModel, ...AI_MODELLER.filter((m) => m !== calisanModel)] : AI_MODELLER;
+  let r, sonHata;
+  for (const m of sira) {
+    try { r = await env.AI.run(m, { messages: [{ role: "system", content: SISTEM }, { role: "user", content: icerik }], max_tokens: 500, temperature: 0.2 }); calisanModel = m; break; }
+    catch (e) { sonHata = e; if (!/5018|not allowed|No such model|5007/i.test(e.message)) throw e; }
+  }
+  if (!r) throw sonHata;
   const j = jsonCoz(r?.response ?? r);
   if (!j || typeof j.ozet !== "string") return { hata: "yanıt çözülemedi", ham: String(r?.response ?? "").slice(0, 400), kaynakUzunluk: kaynak.length };
   const urunler = [...new Set((j.urunler || []).map(urunSlug).filter(Boolean))].slice(0, 4);
   const iller = [...new Set((j.iller || []).map(ilSlug).filter(Boolean))].slice(0, 3);
-  return { alakali: j.alakali === false ? 0 : 1, ozet: j.ozet.trim().slice(0, 700), onem: String(j.onem || "").trim().slice(0, 500), konu: KONU[j.konu] ? j.konu : konuBul(n), ilgili: JSON.stringify({ u: urunler, i: iller }), kaynakUzunluk: kaynak.length };
+  return { model: calisanModel, alakali: j.alakali === false ? 0 : 1, ozet: j.ozet.trim().slice(0, 700), onem: String(j.onem || "").trim().slice(0, 500), konu: KONU[j.konu] ? j.konu : konuBul(n), ilgili: JSON.stringify({ u: urunler, i: iller }), kaynakUzunluk: kaynak.length };
 }
 
 export const HABER_SEMA = ["ALTER TABLE news ADD COLUMN ozet TEXT", "ALTER TABLE news ADD COLUMN onem TEXT", "ALTER TABLE news ADD COLUMN konu TEXT", "ALTER TABLE news ADD COLUMN ilgili TEXT", "ALTER TABLE news ADD COLUMN alakali INTEGER", "ALTER TABLE news ADD COLUMN islendi INTEGER",
