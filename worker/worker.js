@@ -248,7 +248,11 @@ function newsList(rows) {
 async function newsPage(env, url) {
   const cat = url.searchParams.get("kategori") || "";
   const p = Math.max(1, parseInt(url.searchParams.get("sayfa") || "1", 10) || 1);
-  const rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 });
+  let rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 });
+  if (url.search === "?onizleme=tk27" && env.AI) { /* geçici önizleme: ilk 5 habere özet yaz, kaydetme */
+    const z = await Promise.all(rows.slice(0, 5).map((n) => haberYaz(env, n).catch((e) => ({ hata: e.message }))));
+    rows = rows.map((n, i) => (z[i] && !z[i].hata && z[i].alakali ? { ...n, ...z[i], id: n.id } : i < 5 ? { ...n, _h: z[i]?.hata || "alakasız" } : n)).filter((n) => !(n._h === "alakasız"));
+  }
   const tabs = `<nav class="tabs" aria-label="Kategoriler"><a href="/haberler"${!cat ? ' aria-current="page"' : ""}>Tümü</a>${Object.entries(CATS).map(([k, v]) => `<a href="/haberler?kategori=${k}"${cat === k ? ' aria-current="page"' : ""}>${v}</a>`).join("")}</nav>`;
   const more = rows.length === 40 ? `<p><a href="/haberler?${cat ? `kategori=${cat}&` : ""}sayfa=${p + 1}">Daha eski haberler →</a></p>` : "";
   const ctx = { esc, ago, CATS };
