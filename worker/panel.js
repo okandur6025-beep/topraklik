@@ -280,8 +280,8 @@ const SEKME = [["ozet", "Genel bakış"], ["trafik", "Trafik"], ["ilanlar", "İl
 
 const yanit = (s, durum = 200) => new Response(s, { status: durum, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store", "x-robots-tag": "noindex, nofollow" } });
 
-export async function panel(req, env, url, { page }) {
-  const k = await erisim(req, env);
+export async function panel(req, env, url, { page, onay }) {
+  const k = onay ? { email: "yonetici" } : await erisim(req, env);
   if (!k) return yanit(page({ title: "Yönetim paneli · Topraklık", description: "", path: "/okan", noindex: true, body: `<div class="pn-giris"><h1>Giriş gerekli</h1><p>Bu sayfa yalnızca yetkili e-posta adresiyle açılır. Lütfen sayfayı yenileyin; e-posta doğrulama ekranı açılacaktır.</p></div><style>${CSS}</style>` }), 401);
   if (k.kurulum) return yanit(page({ title: "Yönetim paneli kurulumu · Topraklık", description: "", path: "/okan", noindex: true, body: `<div class="pn-giris"><h1>Panel kurulumu bekliyor</h1><p>E-postayla giriş için Cloudflare Access ayarı tamamlanınca panel burada açılacak. Kurulum adımları Claude sohbetinde.</p></div><style>${CSS}</style>` }), 503);
   if (url.pathname === "/okan/plan" && req.method === "POST") {

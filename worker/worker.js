@@ -530,7 +530,7 @@ export default {
       if (path === "/api/haberler") { try { return Response.json(await latestNews(env, { cat: url.searchParams.get("kategori") || "", limit: 30 }), { headers: { "cache-control": "public, max-age=300" } }); } catch (e) { return Response.json({ hata: e.message }, { status: 500 }); } }
       if (path === "/api/duyurular") return Response.json(await tickerItems(env), { headers: { "cache-control": "public, max-age=300" } });
       if (path === "/api/olay" && req.method === "POST") return olayKaydet(req, env);
-      if (path === "/okan" || path === "/okan/plan") return panel(req, env, url, { page });
+      if (path === "/okan" || path === "/okan/plan") return panel(req, env, url, { page, onay: await yetkili(req, env) });
       if (path === "/manifest.webmanifest") return new Response(MANIFEST, { headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "public, max-age=86400" } });
       if (path === "/haberler") return newsPage(env, url);
       { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }
