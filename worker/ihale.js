@@ -10,7 +10,8 @@ export const IHALE_SCHEMA = [
 const COLS = ["id", "kaynak", "tip", "ilan_id", "il", "il_slug", "ilce", "ilce_slug", "mahalle", "ada", "parsel", "cins", "imar", "m2", "bedel", "teminat", "tarih", "yer", "usul", "hisse", "amac", "tasinmaz_no", "link", "foto", "bitis", "nitelik", "dosya"];
 const EK_KOLON = ["bitis TEXT", "nitelik TEXT", "dosya TEXT"];
 const AKTIF = "aktif = 1 AND COALESCE(bitis, substr(tarih, 1, 10)) >= ?1";
-export const KAYNAK = { milliemlak: { ad: "Milli Emlak", tur: "Hazine", uzun: "Milli Emlak (hazine)" }, bik: { ad: "ilan.gov.tr", tur: "İcra", uzun: "İcra ve mahkeme satışları (ilan.gov.tr)" } };
+export const KAYNAK = { milliemlak: { ad: "Milli Emlak", tur: "Hazine", uzun: "Milli Emlak (hazine)" }, bik: { ad: "ilan.gov.tr", tur: "İcra", uzun: "İcra ve mahkeme satışları (ilan.gov.tr)" }, uyap: { ad: "ilan.gov.tr", tur: "İcra", uzun: "UYAP e-Satış (ilan.gov.tr)" } };
+const ICRA = (k) => k === "bik" || k === "uyap";
 const TIP = { satis: "Satış", kira: "Kiralama" };
 const CORS_ORIGINS = ["https://www.milliemlak.gov.tr", "https://milliemlak.gov.tr"];
 
@@ -77,7 +78,7 @@ function kart(x, esc) {
 <h3><a href="/ihaleler/ilan/${esc(x.id)}">${esc(baslik)}</a></h3>
 <div class="yer">${esc([x.il + " / " + x.ilce, x.mahalle || x.nitelik].filter(Boolean).join(" · "))}</div>
 <div class="fiyat">${x.bedel ? tl(x.bedel) : "Bedel ilanda"}${x.tip === "kira" && x.bedel ? ` <small style="font-size:13px;color:var(--muted)">yıllık</small>` : ""}</div>
-<dl>${x.ada ? `<dt>Ada / parsel</dt><dd>${esc(x.ada)} / ${esc(x.parsel || "—")}</dd>` : ""}${birim ? `<dt>m² fiyatı</dt><dd>${nf(birim)} TL</dd>` : ""}${x.teminat ? `<dt>Teminat</dt><dd>${tl(x.teminat)}</dd>` : ""}${x.dosya ? `<dt>Dosya</dt><dd>${esc(x.dosya)}</dd>` : ""}<dt>${x.kaynak === "bik" ? "1. satış" : "İhale"}</dt><dd>${esc(trTarih(x.tarih))}</dd>${x.amac ? `<dt>Amaç</dt><dd>${esc(x.amac)}</dd>` : ""}</dl>
+<dl>${x.ada ? `<dt>Ada / parsel</dt><dd>${esc(x.ada)} / ${esc(x.parsel || "—")}</dd>` : ""}${birim ? `<dt>m² fiyatı</dt><dd>${nf(birim)} TL</dd>` : ""}${x.teminat ? `<dt>Teminat</dt><dd>${tl(x.teminat)}</dd>` : ""}${x.dosya ? `<dt>Dosya</dt><dd>${esc(x.dosya)}</dd>` : ""}<dt>${ICRA(x.kaynak) ? "1. satış" : "İhale"}</dt><dd>${esc(trTarih(x.tarih))}</dd>${x.amac ? `<dt>Amaç</dt><dd>${esc(x.amac)}</dd>` : ""}</dl>
 <div class="alt"><a class="btn dolu" href="/ihaleler/ilan/${esc(x.id)}">Detay</a><a class="btn" href="${esc(x.link)}" target="_blank" rel="noopener nofollow">${esc(KAYNAK[x.kaynak]?.ad || "Kaynak")}'ta gör</a></div></div>`;
 }
 
@@ -98,7 +99,7 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
     const add = (sql, v) => { b.push(v); w.push(sql.replace("?", "?" + b.length)); };
     if (f.il) add("il_slug = ?", f.il);
     if (f.ilce) add("ilce_slug = ?", f.ilce);
-    if (f.kaynak) add("kaynak = ?", f.kaynak);
+    if (f.kaynak === "icra") w.push("kaynak IN ('bik', 'uyap')"); else if (f.kaynak) add("kaynak = ?", f.kaynak);
     if (f.tip) add("tip = ?", f.tip);
     if (f.cins) add("cins = ?", f.cins);
     if (+f.max) add("bedel <= ?", +f.max);
@@ -111,14 +112,14 @@ export async function ihaleListe(env, url, ctx, sabit = {}) {
   let topS = 0, topK = 0, topI = 0;
   for (const o of opts) {
     ils[o.il_slug] = o.il; if (o.il_slug === f.il) ilces[o.ilce_slug] = o.ilce; cinsler[o.cins] = 1;
-    if ((!f.il || o.il_slug === f.il) && (!f.ilce || o.ilce_slug === f.ilce)) { if (o.kaynak === "bik") topI += o.n; else if (o.tip === "satis") topS += o.n; else topK += o.n; }
+    if ((!f.il || o.il_slug === f.il) && (!f.ilce || o.ilce_slug === f.ilce)) { if (ICRA(o.kaynak)) topI += o.n; else if (o.tip === "satis") topS += o.n; else topK += o.n; }
   }
   const ilAd = ils[f.il] || "", ilceAd = ilces[f.ilce] || "";
   const opt = (obj, v, bos) => `<option value="">${bos}</option>` + Object.entries(obj).sort((a, c) => a[1].localeCompare(c[1], "tr")).map(([k, t]) => `<option value="${esc(k)}"${k === v ? " selected" : ""}>${esc(t)}</option>`).join("");
   const form = `<form class="filt" method="get" action="/ihaleler">
 <label>İl<select name="il" onchange="this.form.ilce&&(this.form.ilce.value='');this.form.submit()">${opt(ils, f.il, "Tüm iller")}</select></label>
 <label>İlçe<select name="ilce"${f.il ? "" : " disabled"}>${opt(ilces, f.ilce, f.il ? "Tüm ilçeler" : "Önce il seçin")}</select></label>
-<label>Kaynak<select name="kaynak">${opt({ bik: "İcra / mahkeme", milliemlak: "Hazine (Milli Emlak)" }, f.kaynak, "Hepsi")}</select></label>
+<label>Kaynak<select name="kaynak">${opt({ icra: "İcra / mahkeme", milliemlak: "Hazine (Milli Emlak)" }, f.kaynak, "Hepsi")}</select></label>
 <label>İlan türü<select name="tip">${opt(TIP, f.tip, "Satış ve kira")}</select></label>
 <label>Taşınmaz cinsi<select name="cins">${opt(Object.fromEntries(Object.keys(cinsler).map((c) => [c, c])), f.cins, "Hepsi")}</select></label>
 <label>En fazla bedel (TL)<input name="max" type="number" min="0" step="10000" value="${esc(f.max)}" placeholder="örn. 1000000"></label>
@@ -147,7 +148,7 @@ export async function ihaleDetay(env, id, ctx) {
   try { x = await env.DB.prepare("SELECT * FROM ihale WHERE id = ?1").bind(id).first(); } catch (e) {}
   if (!x) return null;
   const gecti = !x.aktif || (x.bitis || (x.tarih || "").slice(0, 10)) < bugun();
-  const icra = x.kaynak === "bik";
+  const icra = ICRA(x.kaynak);
   let ek = null;
   if (icra && ctx.bikDetay) { try { ek = await ctx.bikDetay(x.ilan_id, ctx.exec); } catch (e) {} }
   if (ek) { x.ada = x.ada || ek.ada; x.parsel = x.parsel || ek.parsel; x.mahalle = x.mahalle || ek.mahalle; }
@@ -176,7 +177,7 @@ ${satir("İhale usulü", esc(x.usul))}
 ${satir("İmar durumu", esc(x.imar))}
 ${satir("Hazine hissesi", esc(x.hisse))}
 ${satir("Kiralama amacı", esc(x.amac))}
-${satir("Taşınmaz no", esc(x.tasinmaz_no))}
+${satir(icra ? "İlan no" : "Taşınmaz no", esc(x.tasinmaz_no))}
 </tbody></table>
 <p><a class="btn dolu" href="${esc(x.link)}" target="_blank" rel="noopener nofollow">İlanın aslını ${esc(KAYNAK[x.kaynak]?.ad)}'ta aç</a></p>
 ${ek?.metin ? `<h2>İlan metni</h2><details><summary>İlanın tam metnini göster</summary><p style="white-space:pre-line;font-size:14.5px">${esc(ek.metin)}</p></details>` : ""}
@@ -184,7 +185,7 @@ ${ek?.metin ? `<h2>İlan metni</h2><details><summary>İlanın tam metnini göste
 ${icra ? `<p>İcra ve mahkeme satışları UYAP e-Satış portalında elektronik açık artırmayla yapılır. e-Devlet ile esatis.uyap.gov.tr adresine girip ilandaki dosyayı bulur, muhammen bedelin %10'u kadar teminatı yatırarak teklif verirsiniz. İlk artırmada en az muhammen bedelin %50'si istenir; alıcı çıkmazsa ikinci artırma yapılır.</p><p>Adım adım anlatım için <a href="/rehber/icra-ihalesine-nasil-girilir">icra ihalesine nasıl girilir</a>, masraflar için <a href="/rehber/icra-ihalesi-masraflari">icra ihalesi masrafları</a> rehberine bakın.</p>` : `<p>Hazine taşınmaz ihaleleri 2886 sayılı Devlet İhale Kanunu'na göre yapılır. Katılmak için ihale saatinden önce geçici teminatı yatırıp, kimlik ve tebligat adresi belgeleriyle ihaleyi yapan Milli Emlak müdürlüğüne başvurursunuz. Ayrıntılar ilanın şartnamesinde yazar; bazı ihalelerde ilk ödeme peşin, kalanı taksitle ödenebilir.</p>
 <p>Ayrıntılı adımlar için <a href="/rehber/hazine-arazisi-nasil-alinir">hazine arazisi nasıl alınır</a> rehberine bakın.</p>`}
 ${urunler.length ? `<h2>${esc(x.il)} ilinde yaygın yetişen ürünler</h2><p class="chips">${urunler.map((u) => `<a class="tag" href="/urun/${u.urun}">${esc(u.ad)}</a>`).join("")}</p><p>Arazide ne ekebileceğinizi ve tahmini kazancı <a href="/il/${esc(x.il_slug)}">${esc(x.il)} sayfasından</a> ve ürün rehberlerindeki hesaplayıcıdan görebilirsiniz.</p>` : ""}
-<div class="src">Kaynak: <a href="${esc(x.link)}" target="_blank" rel="noopener nofollow">${icra ? "Basın İlan Kurumu, ilan.gov.tr" : "T.C. Çevre, Şehircilik ve İklim Değişikliği Bakanlığı Milli Emlak Genel Müdürlüğü"}</a> · Topraklık'ta ilk görülme: ${esc((x.ilk_gorulme || "").slice(0, 10))} · son kontrol: ${esc((x.guncel || "").slice(0, 10))}<br>Bilgiler kaynaktan otomatik alınır; teklif vermeden önce ilanın aslını ve şartnamesini kontrol edin.</div></article>
+<div class="src">Kaynak: <a href="${esc(x.link)}" target="_blank" rel="noopener nofollow">${x.kaynak === "uyap" ? "UYAP e-Satış ilanı, ilan.gov.tr" : icra ? "Basın İlan Kurumu, ilan.gov.tr" : "T.C. Çevre, Şehircilik ve İklim Değişikliği Bakanlığı Milli Emlak Genel Müdürlüğü"}</a> · Topraklık'ta ilk görülme: ${esc((x.ilk_gorulme || "").slice(0, 10))} · son kontrol: ${esc((x.guncel || "").slice(0, 10))}<br>Bilgiler kaynaktan otomatik alınır; teklif vermeden önce ilanın aslını ve şartnamesini kontrol edin.</div></article>
 <aside><h3>${esc(x.il)} ilindeki diğer ihaleler</h3>${benzer.length ? benzer.map((b) => `<a class="card" href="/ihaleler/ilan/${esc(b.id)}"><b>${esc(b.cins || "")} · ${nf(b.m2)} m²</b><span>${esc(b.ilce)} · ${b.bedel ? tl(b.bedel) : ""} · ${esc(trTarih(b.tarih).split(" · ")[0])}</span></a>`).join("") : `<p>Şu an başka ilan yok.</p>`}<a class="card" href="/ihaleler/${esc(x.il_slug)}"><b>Tüm ${esc(x.il)} ihaleleri →</b></a></aside></div>`;
   const jsonld = [{ "@context": "https://schema.org", "@type": "RealEstateListing", name: baslik, url: `https://topraklik.com/ihaleler/ilan/${x.id}`, datePosted: (x.ilk_gorulme || "").slice(0, 10), ...(x.bedel ? { offers: { "@type": "Offer", price: x.bedel, priceCurrency: "TRY" } } : {}) }];
   return html(page({ title: `${baslik} · Topraklık`, description: `${x.il} ${x.ilce} ${x.mahalle || ""} ${x.ada} ada ${x.parsel} parsel, ${nf(x.m2)} m² ${x.cins || ""}. ${x.bedel ? tl(x.bedel) : ""}, ihale ${trTarih(x.tarih)}.`, path: `/ihaleler/ilan/${x.id}`, body, current: "/ihaleler", jsonld, noindex: gecti }), 200, 1800);
@@ -205,7 +206,7 @@ export async function ihaleAnaSayfa(env) {
   try {
     const rows = (await env.DB.prepare(`SELECT * FROM ihale WHERE ${AKTIF} AND tip = 'satis' AND cins IN ('Tarla','Arazi','Bağ-Bahçe') ORDER BY tarih LIMIT 6`).bind(bugun()).all()).results || [];
     const n = (await env.DB.prepare(`SELECT kaynak, tip, count(*) n FROM ihale WHERE ${AKTIF} GROUP BY kaynak, tip`).bind(bugun()).all()).results || [];
-    return { rows, sayi: n.reduce((o, r) => { const k = r.kaynak === "bik" ? "icra" : r.tip; o[k] = (o[k] || 0) + r.n; return o; }, {}) };
+    return { rows, sayi: n.reduce((o, r) => { const k = ICRA(r.kaynak) ? "icra" : r.tip; o[k] = (o[k] || 0) + r.n; return o; }, {}) };
   } catch (e) { return { rows: [], sayi: {} }; }
 }
 export const anaKart = (x, esc) => `<a class="tk-item" href="/ihaleler/ilan/${esc(x.id)}" style="text-decoration:none"><span class="tk-cat">Hazine ${esc(TIP[x.tip])} · ${esc(kalan(x.tarih || ""))}</span><span style="font-weight:800;color:var(--ink,#26261E)">${esc(x.cins)} · ${nf(x.m2)} m²${dekar(x.m2)}</span><span style="color:var(--muted,#6C6858);font-size:14px">${esc(x.il)} / ${esc(x.ilce)} · ${esc(x.mahalle || "")}</span><span style="font-weight:800;color:var(--green,#2E5130);font-size:18px">${x.bedel ? tl(x.bedel) : ""}</span><span class="tk-meta">İhale ${esc(trTarih(x.tarih))}</span></a>`;
