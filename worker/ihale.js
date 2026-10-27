@@ -9,7 +9,7 @@ export const IHALE_SCHEMA = [
 ];
 const COLS = ["id", "kaynak", "tip", "ilan_id", "il", "il_slug", "ilce", "ilce_slug", "mahalle", "ada", "parsel", "cins", "imar", "m2", "bedel", "teminat", "tarih", "yer", "usul", "hisse", "amac", "tasinmaz_no", "link", "foto", "bitis", "nitelik", "dosya"];
 const EK_KOLON = ["bitis TEXT", "nitelik TEXT", "dosya TEXT"];
-const AKTIF = "aktif = 1 AND COALESCE(bitis, substr(tarih, 1, 10)) >= ?1";
+const AKTIF = "aktif = 1 AND bitis >= ?1";
 export const KAYNAK = { milliemlak: { ad: "Milli Emlak", tur: "Hazine", uzun: "Milli Emlak (hazine)" }, bik: { ad: "ilan.gov.tr", tur: "İcra", uzun: "İcra ve mahkeme satışları (ilan.gov.tr)" }, uyap: { ad: "ilan.gov.tr", tur: "İcra", uzun: "UYAP e-Satış (ilan.gov.tr)" } };
 const ICRA = (k) => k === "bik" || k === "uyap";
 const TIP = { satis: "Satış", kira: "Kiralama" };

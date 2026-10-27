@@ -430,8 +430,37 @@ async function proxy(req, url) {
   return fetch(new Request(o, { method: req.method, headers: req.headers, body: ["GET", "HEAD"].includes(req.method) ? undefined : req.body, redirect: "manual" }));
 }
 
+/* Kenar önbelleği: aynı sayfa için veritabanı her ziyarette okunmasın (D1 ücretsiz okuma sınırı) */
+function onbellekSuresi(path) {
+  if (path === "/") return 600;
+  if (path === "/sitemap.xml") return 21600;
+  if (path.startsWith("/haberler")) return 900;
+  if (path.startsWith("/ihaleler/ilan/")) return 21600;
+  if (path.startsWith("/ihaleler")) return 1800;
+  if (/^\/(il|urun|rehber|hibe)(\/|$)/.test(path)) return 21600;
+  return 0;
+}
+
 export default {
   async fetch(req, env, ctxExec) {
+    const url = new URL(req.url);
+    const path = url.pathname.replace(/\/+$/, "") || "/";
+    const ttl = req.method === "GET" && !url.searchParams.has("x") ? onbellekSuresi(path) : 0;
+    if (!ttl) return this.isle(req, env, ctxExec);
+    const cache = caches.default, key = new Request(url.toString(), { method: "GET" });
+    const hit = await cache.match(key);
+    if (hit) return hit;
+    const res = await this.isle(req, env, ctxExec);
+    const ct = res.headers.get("content-type") || "";
+    if (res.status === 200 && /html|xml/.test(ct)) {
+      const h = new Headers(res.headers); h.set("cache-control", `public, max-age=300, s-maxage=${ttl}`);
+      const out = new Response(res.body, { status: 200, headers: h });
+      ctxExec.waitUntil(cache.put(key, out.clone()));
+      return out;
+    }
+    return res;
+  },
+  async isle(req, env, ctxExec) {
     const url = new URL(req.url);
     const path = url.pathname.replace(/\/+$/, "") || "/";
     try {
@@ -474,6 +503,7 @@ export default {
         if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401 });
         if (url.pathname === "/admin/probe") { const r = await fetch(url.searchParams.get("u"), { headers: { "user-agent": UA } }); const t = await r.text(); return Response.json({ status: r.status, len: t.length, items: (t.match(/<item[ >]/g) || []).length, head: t.slice(0, 300), props: (t.match(/"properties":\{[^}]*\}/g) || []).slice(0, 4), tail: t.slice(-300) }); }
         if (url.pathname === "/admin/geo") return Response.json(await geoStep(env));
+            if (url.pathname === "/admin/bakim") { const out = []; for (const q of ["CREATE INDEX IF NOT EXISTS geo_mahalle_ilce ON geo_mahalle (ilce_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_il ON geo_ilce (il_id)", "CREATE INDEX IF NOT EXISTS geo_ilce_done ON geo_ilce (mah_done)", "CREATE INDEX IF NOT EXISTS ihale_aktif_bitis ON ihale (aktif, bitis)", "CREATE INDEX IF NOT EXISTS ihale_kaynak_il ON ihale (kaynak, il_slug)", "UPDATE ihale SET bitis = substr(tarih, 1, 10) WHERE bitis IS NULL", "CREATE INDEX IF NOT EXISTS ilce_uretim_slug ON ilce_uretim (slug, yil)"]) { try { await env.DB.prepare(q).run(); out.push("ok: " + q.slice(0, 60)); } catch (e) { out.push("hata: " + e.message.slice(0, 120)); } } return Response.json(out); }
         if (url.pathname === "/admin/runs") return Response.json((await env.DB.prepare("SELECT * FROM runs ORDER BY id DESC LIMIT 30").all()).results);
         if (url.pathname === "/admin/uyap") return Response.json(await uyapAdim(env, { IL_AD, slugify, butce: parseInt(url.searchParams.get("n") || "18", 10) }));
         if (url.pathname === "/admin/bik") return Response.json(await bikAdim(env, { IL_AD, slugify, zorla: url.searchParams.get("zorla") === "1", sayfaSayisi: parseInt(url.searchParams.get("n") || "12", 10) }));
@@ -496,8 +526,8 @@ export default {
       if (gm >= 60 && gm <= 99) { try { await bikAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'bik', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (gm >= 241 && gm <= 246) { try { await fiyatAdim(env, gm - 241); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'fiyat', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (min % 30 === 0) await collectNews(env, Math.floor(min / 30));
-      else if (min % 2 === 1) { try { await uyapAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'uyap', ?2)").bind(new Date().toISOString(), e.message).run(); } }
-      else { try { await geoStep(env); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'geo', ?2)").bind(new Date().toISOString(), e.message).run(); } }
+      else if (min % 4 === 1) { try { await uyapAdim(env, { IL_AD, slugify }); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'uyap', ?2)").bind(new Date().toISOString(), e.message).run(); } }
+      else if (min % 10 === 2) { try { await geoStep(env); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'geo', ?2)").bind(new Date().toISOString(), e.message).run(); } }
     })());
   },
 };
