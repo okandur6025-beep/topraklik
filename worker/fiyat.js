@@ -38,7 +38,7 @@ export const HAL = {
   lahana: ["LAHANA BEYAZ"], ispanak: ["ISPANAK"], pirasa: ["PIRASA"], "karnabahar-brokoli": ["KARNABAHAR", "BROKOLI"],
   "taze-fasulye": ["FASULYE"], barbunya: ["BARBUNYA TAZE"], borulce: ["BORULCE"], bamya: ["BAMYA"], enginar: ["ENGINAR", "ENGİNAR"],
   elma: ["ELMA"], armut: ["ARMUT"], ayva: ["AYVA"], kiraz: ["KİRAZ", "KIRAZ"], visne: ["VİŞNE", "VISNE"], kayisi: ["KAYISI"],
-  seftali: ["ŞEFTALI", "NEKTARIN"], erik: ["ERİK"], nar: ["NAR"], incir: ["INCIR"], uzum: ["ÜZÜM"], portakal: ["PORTAKAL"],
+  seftali: ["ŞEFTALI", "NEKTARIN"], erik: ["ERİK"], nar: ["NAR"], portakal: ["PORTAKAL"],
   mandalina: ["MANDALİNA"], limon: ["LİMON"], muz: ["MUZ YERLI"], cilek: ["CILEK", "ÇİLEK"], kivi: ["KIVI"],
   "trabzon-hurmasi": ["CENNET ELMASI", "TRABZON HURMASI"], avokado: ["AVAKADO", "AVOKADO"],
 };
@@ -58,7 +58,7 @@ async function borsaUrun(kodlar) {
     for (const tr of t.split(/<tr[\s>]/i).slice(1)) {
       const c = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((m) => m[1].replace(/<[^>]+>/g, "").trim());
       if (c.length < 8 || !/\d{2}\.\d{2}\.\d{4}/.test(c[1])) continue;
-      satirlar.push({ borsa: c[0].replace(/ TICARET BORSASI$/i, ""), tarih: tarihISO(c[1]), en_az: num(c[2]), en_cok: num(c[3]), ort: num(c[4]), miktar: num(c[5]), tutar: num(c[7]) });
+      satirlar.push({ borsa: c[0].replace(/\s*TİCARET BORSASI\s*$|\s*TICARET BORSASI\s*$|\s*Ticaret Borsası\s*$/i, ""), tarih: tarihISO(c[1]), en_az: num(c[2]), en_cok: num(c[3]), ort: num(c[4]), miktar: num(c[5]), tutar: num(c[7]) });
     }
   }
   return { satirlar, birim };

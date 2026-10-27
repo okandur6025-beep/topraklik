@@ -32,7 +32,7 @@ export function fiyatUygula(u, rows) {
   const makul = (r) => r && r.deger >= tahmin * 0.3 && r.deger <= tahmin * 3.5; // birim farkı veya hatalı kayıt varsa kullanma
   const b = rows.find((r) => r.kaynak === "borsa" && makul(r)), h = rows.find((r) => r.kaynak === "hal" && r.deger > 0);
   if (b) {
-    const borsalar = JSON.parse(b.detay || "[]").slice(0, 3).map((x) => x.b.toLocaleLowerCase("tr").replace(/(^|\s)\S/g, (c) => c.toLocaleUpperCase("tr"))).join(", ");
+    const borsalar = [...new Set(JSON.parse(b.detay || "[]").map((x) => x.b.replace(/\s*ticaret borsas[ıi]\s*$/i, "").toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase())))].slice(0, 3).join(", ");
     z.piyasa.push([`Borsa ortalaması ${trSayi(b.deger)} TL/kg: son 60 günde ${b.islem} kayıt, en son ${trGun(b.tarih)}${borsalar ? " (" + borsalar + ")" : ""}. TOBB ticaret borsaları`, "https://borsa.tobb.org.tr/fiyat_urun_1.php"]);
     if (!u.kazanc.fiyat_kaynak) {
       z.fiyat = typeof z.fiyat === "object" ? Object.fromEntries(Object.keys(z.fiyat).map((k) => [k, b.deger])) : b.deger;
