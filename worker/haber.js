@@ -119,6 +119,7 @@ export async function haberAdim(env, adet = 2) {
 /* ---------- Görünüm: Topraklık Haber Bülteni ---------- */
 const SERIF = `"Playfair Display",Georgia,"Times New Roman",serif`;
 export const HABER_CSS = `
+article.bt-lead,article.hb-kart,article.bt-yan{background:none;border:0;border-radius:0;padding:0;max-width:none}
 .hb-art{position:relative;overflow:hidden;display:block;border-radius:12px;background:#EFE8D8;aspect-ratio:16/10;isolation:isolate}
 .hb-art svg{display:block;width:100%;height:100%;transition:transform .5s ease}
 a:hover>.hb-art svg,.hb-kart:hover .hb-art svg{transform:scale(1.035)}
