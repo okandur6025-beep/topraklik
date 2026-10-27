@@ -3,7 +3,8 @@
 // - Ana sayfaya kayan yazı + "Tarımda bugün" kutusu + menü linkleri ekler
 // - /haberler, /rehber, /hibe, /il, /urun sayfalarını D1'den üretir
 // - Her 2 saatte bir tarım haberlerini toplar (cron)
-import { URUN, URUN_LISTE, IL_AD, urunleriIl, urunPage, urunJsonLd, URUN_CSS } from "./urun.js";
+import { URUN, URUN_LISTE, IL_AD, urunleriIl, urunPage, urunJsonLd, URUN_CSS, fiyatUygula } from "./urun.js";
+import { fiyatAdim, urunFiyat } from "./fiyat.js";
 import { milliEmlakTopla } from "./topla.js";
 import { ihaleCors, ihaleYukle, ihaleListe, ihaleDetay, ihaleKutusu, ihaleAnaSayfa, anaKart, ihaleSitemap, IHALE_CSS } from "./ihale.js";
 const ORIGIN = "https://topraklik.pages.dev";
@@ -267,7 +268,7 @@ ${rows.length ? `<div class="grid">${rows.map((r) => `<a class="card" href="/${s
 
 async function contentPage(env, sec, slug) {
   if (sec === "urun" && URUN[slug]) {
-    const u = URUN[slug];
+    const u = fiyatUygula(URUN[slug], await urunFiyat(env, slug));
     const related = URUN_LISTE.filter((x) => x.kat === u.kat && x.slug !== slug).slice(0, 14);
     const body = `<div class="crumb"><a href="/">Ana sayfa</a> › <a href="/urun">Ürün rehberleri</a> › <a href="/urun#${slugify(u.kat)}">${esc(u.kat)}</a> › ${esc(u.ad)}</div>${urunPage(u, { esc, IL_AD, related })}`;
     return html(page({ title: `${u.title || u.ad + " yetiştiriciliği: nerede, nasıl yetişir, ne kazandırır?"} · Topraklık`, description: u.description || u.ozet, path: `/urun/${slug}`, body, current: "/urun", jsonld: urunJsonLd(u, SITE) }), 200, 1800);
@@ -463,6 +464,7 @@ export default {
         if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401 });
         if (url.pathname === "/admin/probe") { const r = await fetch(url.searchParams.get("u"), { headers: { "user-agent": UA } }); const t = await r.text(); return Response.json({ status: r.status, len: t.length, items: (t.match(/<item[ >]/g) || []).length, head: t.slice(0, 300), props: (t.match(/"properties":\{[^}]*\}/g) || []).slice(0, 4), tail: t.slice(-300) }); }
         if (url.pathname === "/admin/geo") return Response.json(await geoStep(env));
+        if (url.pathname === "/admin/fiyat") return Response.json(await fiyatAdim(env, parseInt(url.searchParams.get("parca") || "0", 10)));
         if (url.pathname === "/admin/collect") return Response.json(await collectNews(env, parseInt(url.searchParams.get("slot") || "0", 10)));
       }
       const res = await proxy(req, url);
@@ -476,6 +478,8 @@ export default {
   async scheduled(event, env, ctx) {
     const min = Math.floor(event.scheduledTime / 60000);
     ctx.waitUntil((async () => {
+      const gm = min % 1440; // UTC günün dakikası; 241–246 = İstanbul 07:01–07:06
+      if (gm >= 241 && gm <= 246) { try { await fiyatAdim(env, gm - 241); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'fiyat', ?2)").bind(new Date().toISOString(), e.message).run(); } return; }
       if (min % 30 === 0) await collectNews(env, Math.floor(min / 30));
       else { try { await geoStep(env); } catch (e) { await env.DB.prepare("INSERT INTO runs (at, job, log) VALUES (?1, 'geo', ?2)").bind(new Date().toISOString(), e.message).run(); } }
     })());

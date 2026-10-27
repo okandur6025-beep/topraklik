@@ -21,6 +21,31 @@ export function varsayilanNet(z) {
   return { mod: m, verim: v, fiyat: f, gelir: v * f, maliyet: c, net: v * f - c + (z.destek || 0) };
 }
 
+const trSayi = (n) => (Math.abs(n) < 10 && n !== Math.round(n) ? n.toLocaleString("tr-TR", { maximumFractionDigits: 2 }) : Math.round(n).toLocaleString("tr-TR"));
+const trGun = (t) => { const [y, m, g] = String(t).split("-"); return g ? `${+g}.${m}.${y}` : t; };
+
+/* Canlı piyasa fiyatlarını (fiyat tablosu) ürün verisine uygular. Resmî fiyatı (TMO vb.) olan ürünlerde varsayılan değişmez. */
+export function fiyatUygula(u, rows) {
+  if (!u.kazanc || !rows?.length) return u;
+  const z = { ...u.kazanc, piyasa: [] };
+  const b = rows.find((r) => r.kaynak === "borsa"), h = rows.find((r) => r.kaynak === "hal");
+  if (b) {
+    const borsalar = JSON.parse(b.detay || "[]").slice(0, 3).map((x) => x.b.toLocaleLowerCase("tr").replace(/(^|\s)\S/g, (c) => c.toLocaleUpperCase("tr"))).join(", ");
+    z.piyasa.push([`Borsa ortalaması ${trSayi(b.deger)} TL/kg: son 60 günde ${b.islem} kayıt, en son ${trGun(b.tarih)}${borsalar ? " (" + borsalar + ")" : ""}. TOBB ticaret borsaları`, "https://borsa.tobb.org.tr/fiyat_urun_1.php"]);
+    if (!u.kazanc.fiyat_kaynak) {
+      z.fiyat = typeof z.fiyat === "object" ? Object.fromEntries(Object.keys(z.fiyat).map((k) => [k, b.deger])) : b.deger;
+      z.fiyat_kaynak = [`Ticaret borsaları son 60 gün ağırlıklı ortalaması (TOBB, ${trGun(b.tarih)})`, "https://borsa.tobb.org.tr/fiyat_urun_1.php"];
+    }
+  }
+  if (h) z.piyasa.push([`İzmir Hali toptan ortalaması ${trSayi(h.deger)} TL/kg (${trGun(h.tarih)}). Hal fiyatına komisyon, nakliye ve fire dahildir; üreticinin eline geçen fiyat daha düşüktür. İzmir Büyükşehir açık veri`, "https://acikveri.bizizmir.com"]);
+  const yeni = { ...u, kazanc: z };
+  if (z.fiyat !== u.kazanc.fiyat) {
+    const d = varsayilanNet(z), br = z.birim || "kg";
+    yeni.sss = u.sss.map((f) => (f.q.startsWith("1 dönüm") ? { ...f, a: `Güncel piyasa fiyatıyla dekarda yaklaşık ${trSayi(d.verim)} ${br} ürün ve ${trSayi(d.fiyat)} TL/${br} fiyatla brüt gelir ${trSayi(d.gelir)} TL, masraf ${trSayi(d.maliyet)} TL${z.destek ? `, destek ${trSayi(z.destek)} TL` : ""}; tahmini net ${trSayi(d.net)} TL olur (arazi kirası hariç). Verim ve fiyat bölgeye göre değişir; sayfadaki hesaplayıcıyla kendi rakamlarınızı girin.${z.ilk ? " " + z.ilk + "." : ""}` } : f));
+  }
+  return yeni;
+}
+
 function kazancHtml(u, esc) {
   const z = u.kazanc;
   if (!z) return "";
@@ -42,6 +67,7 @@ function kazancHtml(u, esc) {
 <li><b>Verim:</b> ${esc(z.verim.aralik || "")}${z.verim_not ? " · " + esc(z.verim_not) : ""}</li>
 <li><b>Fiyat:</b> ${typeof z.fiyat === "object" ? Object.entries(z.fiyat).map(([k, v]) => `${(MOD[k] || k).toLocaleLowerCase("tr")} ${v.toLocaleString("tr-TR")}`).join(", ") : z.fiyat.toLocaleString("tr-TR")} TL/${esc(z.birim || "kg")} · ${z.fiyat_kaynak ? `<a href="${esc(z.fiyat_kaynak[1])}" target="_blank" rel="noopener">${esc(z.fiyat_kaynak[0])}</a>` : esc(z.fiyat_not || "Ekim 2026 yaklaşık üretici fiyatı (Topraklık tahmini); bölgenizdeki borsa ve hal fiyatını girin.")}</li>
 <li><b>Masraf:</b> ${esc(z.maliyet_not || "Tohum/fide, gübre, ilaç, mazot ve makine, işçilik ve sulama dahil; arazi kirası hariç. Ekim 2026 fiyatlarıyla Topraklık tahminidir.")}</li>
+${(z.piyasa || []).map(([t, l]) => `<li><b>Piyasa:</b> ${esc(t)} · <a href="${esc(l)}" target="_blank" rel="noopener">kaynak</a></li>`).join("")}
 ${z.destek ? `<li><b>Destek:</b> ${esc(z.destek_not || "")}</li>` : ""}
 ${z.ilk ? `<li><b>Verime yatma:</b> ${esc(z.ilk)}${z.kurulum ? ` · Kuruluş maliyeti yaklaşık ${tl(z.kurulum)}/dekar (ilk yıl, bir kez)` : ""}</li>` : ""}
 ${z.notu ? `<li>${esc(z.notu)}</li>` : ""}</ul>
