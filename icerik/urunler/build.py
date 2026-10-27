@@ -37,10 +37,11 @@ def derle(u, kat):
     if z:
         m = [k for k in z["verim"] if k != "aralik"][0]
         v = z["verim"][m]; c = z["maliyet"][m] if isinstance(z["maliyet"], dict) else z["maliyet"]
-        net = v * z["fiyat"] - c + z.get("destek", 0)
-        tr = lambda n: f"{round(n):,}".replace(",", ".")
+        f = z["fiyat"][m] if isinstance(z["fiyat"], dict) else z["fiyat"]
+        net = v * f - c + z.get("destek", 0)
+        tr = lambda n: (f"{n:.2f}".rstrip("0").rstrip(".").replace(".", ",") if abs(n) < 10 and n != int(n) else f"{round(n):,}".replace(",", "."))
         sss.append({"q": f"1 dönüm {trlower(ad)} ne kadar kazandırır?",
-                    "a": f"Topraklık'ın Ekim 2026 tahminine göre dekarda yaklaşık {tr(v)} {z.get('birim','kg')} ürün ve {str(z['fiyat']).replace('.', ',')} TL/{z.get('birim','kg')} fiyatla brüt gelir {tr(v*z['fiyat'])} TL, masraf {tr(c)} TL" + (f", destek {tr(z['destek'])} TL" if z.get("destek") else "") + f"; tahmini net {tr(net)} TL olur (arazi kirası hariç). Verim ve fiyat bölgeye göre değişir; sayfadaki hesaplayıcıyla kendi rakamlarınızı girin."
+                    "a": f"Topraklık'ın Ekim 2026 tahminine göre dekarda yaklaşık {tr(v)} {z.get('birim','kg')} ürün ve {tr(f)} TL/{z.get('birim','kg')} fiyatla brüt gelir {tr(v*f)} TL, masraf {tr(c)} TL" + (f", destek {tr(z['destek'])} TL" if z.get("destek") else "") + f"; tahmini net {tr(net)} TL olur (arazi kirası hariç). Verim ve fiyat bölgeye göre değişir; sayfadaki hesaplayıcıyla kendi rakamlarınızı girin."
                     + (f" {z['ilk']}." if z.get("ilk") else "")})
     p["sss"] = sss
     return p

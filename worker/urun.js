@@ -17,8 +17,8 @@ const MOD = { kuru: "Kuru (yağmura dayalı)", sulu: "Sulu", tek: "Standart", se
 
 export function varsayilanNet(z) {
   const m = Object.keys(z.verim).filter((k) => k !== "aralik")[0];
-  const v = z.verim[m], c = typeof z.maliyet === "object" ? z.maliyet[m] : z.maliyet;
-  return { mod: m, verim: v, gelir: v * z.fiyat, maliyet: c, net: v * z.fiyat - c + (z.destek || 0) };
+  const v = z.verim[m], c = typeof z.maliyet === "object" ? z.maliyet[m] : z.maliyet, f = typeof z.fiyat === "object" ? z.fiyat[m] : z.fiyat;
+  return { mod: m, verim: v, fiyat: f, gelir: v * f, maliyet: c, net: v * f - c + (z.destek || 0) };
 }
 
 function kazancHtml(u, esc) {
@@ -33,23 +33,23 @@ function kazancHtml(u, esc) {
 <div class="calc" id="kCalc">${sel}
 <label>Alan (dekar / dönüm)<input id="kDa" type="number" min="0" step="0.5" value="10"></label>
 <label>Verim (${esc(z.birim || "kg")}/dekar)<input id="kV" type="number" min="0" step="any"></label>
-<label>Satış fiyatı (TL/${esc(z.birim || "kg")})<input id="kF" type="number" min="0" step="any" value="${z.fiyat}"></label>
+<label>Satış fiyatı (TL/${esc(z.birim || "kg")})<input id="kF" type="number" min="0" step="any"></label>
 <label>Üretim masrafı (TL/dekar)<input id="kM" type="number" min="0" step="any"></label>
 <label>Destek (TL/dekar)<input id="kD" type="number" min="0" step="any" value="${z.destek || 0}"></label>
 <label>Arazi kirası (TL/dekar)<input id="kK" type="number" min="0" step="any" value="0"></label>
 <div class="out" id="kOut" aria-live="polite"></div></div>
 <ul class="kz">
 <li><b>Verim:</b> ${esc(z.verim.aralik || "")}${z.verim_not ? " · " + esc(z.verim_not) : ""}</li>
-<li><b>Fiyat:</b> ${z.fiyat.toLocaleString("tr-TR")} TL/${esc(z.birim || "kg")} · ${z.fiyat_kaynak ? `<a href="${esc(z.fiyat_kaynak[1])}" target="_blank" rel="noopener">${esc(z.fiyat_kaynak[0])}</a>` : esc(z.fiyat_not || "Ekim 2026 yaklaşık üretici fiyatı (Topraklık tahmini); bölgenizdeki borsa ve hal fiyatını girin.")}</li>
+<li><b>Fiyat:</b> ${typeof z.fiyat === "object" ? Object.entries(z.fiyat).map(([k, v]) => `${(MOD[k] || k).toLocaleLowerCase("tr")} ${v.toLocaleString("tr-TR")}`).join(", ") : z.fiyat.toLocaleString("tr-TR")} TL/${esc(z.birim || "kg")} · ${z.fiyat_kaynak ? `<a href="${esc(z.fiyat_kaynak[1])}" target="_blank" rel="noopener">${esc(z.fiyat_kaynak[0])}</a>` : esc(z.fiyat_not || "Ekim 2026 yaklaşık üretici fiyatı (Topraklık tahmini); bölgenizdeki borsa ve hal fiyatını girin.")}</li>
 <li><b>Masraf:</b> ${esc(z.maliyet_not || "Tohum/fide, gübre, ilaç, mazot ve makine, işçilik ve sulama dahil; arazi kirası hariç. Ekim 2026 fiyatlarıyla Topraklık tahminidir.")}</li>
 ${z.destek ? `<li><b>Destek:</b> ${esc(z.destek_not || "")}</li>` : ""}
 ${z.ilk ? `<li><b>Verime yatma:</b> ${esc(z.ilk)}${z.kurulum ? ` · Kuruluş maliyeti yaklaşık ${tl(z.kurulum)}/dekar (ilk yıl, bir kez)` : ""}</li>` : ""}
 ${z.notu ? `<li>${esc(z.notu)}</li>` : ""}</ul>
 <p class="note">Hesap tahminidir. Gerçek kazanç; toprak, iklim, çeşit, bakım, hasat zamanı ve satış kanalına göre büyük değişir. Ekim öncesi il veya ilçe tarım müdürlüğüne ve ziraat odasına danışın.</p>
 <script>(()=>{const Z=${data},$=(i)=>document.getElementById(i),f=(n)=>Math.round(n).toLocaleString("tr-TR")+" TL";
-const pick=(o,m)=>typeof o==="object"?o[m]:o;function set(){const m=$("kMod").value;$("kV").value=pick(Z.verim,m);$("kM").value=pick(Z.maliyet,m);calc()}
+const pick=(o,m)=>typeof o==="object"?o[m]:o;function set(){const m=$("kMod").value;$("kV").value=pick(Z.verim,m);$("kF").value=pick(Z.fiyat,m);$("kM").value=pick(Z.maliyet,m);calc()}
 function calc(){const a=+$("kDa").value||0,v=+$("kV").value||0,p=+$("kF").value||0,c=+$("kM").value||0,d=+$("kD").value||0,k=+$("kK").value||0;
-const g=a*v*p,t=a*(c+k),n=g-t+a*d;$("kOut").innerHTML="<div><span>Ürün</span><b>"+Math.round(a*v).toLocaleString("tr-TR")+" ${esc(z.birim || "kg")}</b></div><div><span>Brüt gelir</span><b>"+f(g)+"</b></div><div><span>Masraf"+(k?" + kira":"")+"</span><b>"+f(t)+"</b></div>"+(d?"<div><span>Destek</span><b>"+f(a*d)+"</b></div>":"")+"<div class=net><span>Tahmini net</span><b>"+f(n)+"</b></div><div><span>Dekar başına net</span><b>"+f(a?n/a:0)+"</b></div>"}
+const g=a*v*p,t=a*(c+k),n=g-t+a*d;$("kOut").innerHTML="<div><span>Ürün</span><b>"+(+(a*v).toFixed(a*v<10?2:0)).toLocaleString("tr-TR")+" ${esc(z.birim || "kg")}</b></div><div><span>Brüt gelir</span><b>"+f(g)+"</b></div><div><span>Masraf"+(k?" + kira":"")+"</span><b>"+f(t)+"</b></div>"+(d?"<div><span>Destek</span><b>"+f(a*d)+"</b></div>":"")+"<div class=net><span>Tahmini net</span><b>"+f(n)+"</b></div><div><span>Dekar başına net</span><b>"+f(a?n/a:0)+"</b></div>"}
 $("kMod").addEventListener("change",set);["kDa","kV","kF","kM","kD","kK"].forEach(i=>$(i).addEventListener("input",calc));set()})()</script>`;
 }
 
