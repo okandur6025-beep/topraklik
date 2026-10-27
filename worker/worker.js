@@ -399,22 +399,31 @@ ${urunListHtml(await ilUrunleri(env, ilSlug), `${ilce.ad} ve ${il.ad} çevresind
   return html(page({ title: `${ilce.ad} (${il.ad}) mahalleleri, köyleri ve tarla ihaleleri · Topraklık`, description: `${il.ad} ${ilce.ad} ilçesinin ${mahs.length || ""} mahalle ve köyü, haritası, tarım bilgileri ve arazi ihaleleri.`, path: `/il/${ilSlug}/${ilceSlug}`, body, current: "/il" }), 200, 1800);
 }
 
-async function sitemap(env) {
-  const rows = (await env.DB.prepare("SELECT section, slug, updated_at FROM pages WHERE status = 'published'").all()).results || [];
+const xmlYanit = (x) => new Response(x, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600", "x-tk": "1" } });
+const SITEMAP_BOLUM = ["sayfalar", "ihaleler", "iller", "haberler"];
+async function sitemap(env, bolum) {
   const today = new Date().toISOString().slice(0, 10);
-  const urls = [["/", today, "1.0"], ["/haberler", today, "0.8"], ...Object.keys(SECTIONS).map((s) => [`/${s}`, today, "0.8"]), ["/yasal", "2026-10-26", "0.2"],
-    ...URUN_LISTE.map((u) => [`/urun/${u.slug}`, "2026-10-27", "0.7"]),
-    ...REHBER_LISTE.map((r) => [`/rehber/${r.slug}`, today, "0.8"]),
-    ["/araclar", today, "0.8"], ["/hakkimizda", today, "0.3"], ["/iletisim", today, "0.3"], ["/parsel-sorgu", today, "0.9"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
-    ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
-  try { urls.push(...((await env.DB.prepare("SELECT id, published_at FROM news WHERE alakali = 1 AND ozet IS NOT NULL ORDER BY published_at DESC LIMIT 300").all()).results || []).map((n) => [`/haberler/${n.id}`, n.published_at.slice(0, 10), "0.5"])); } catch (e) {}
-  const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
-  const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
-  urls.push(...ils.map((i) => [`/il/${i.slug}`, today, "0.7"]));
-  urls.push(...(await ihaleSitemap(env)).map((u) => [u, today, u.includes("/ilan/") ? "0.6" : "0.8"]));
-  const ilces = (await env.DB.prepare("SELECT il_id, slug FROM geo_ilce WHERE mah_done = 1").all()).results || [];
-  urls.push(...ilces.map((x) => [`/il/${ilSlug[x.il_id]}/${x.slug}`, today, "0.5"]));
-  return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([p, d, pr]) => `  <url><loc>${SITE}${p}</loc><lastmod>${d}</lastmod><priority>${pr}</priority></url>`).join("\n")}\n</urlset>`, { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=3600" } });
+  if (!bolum) return xmlYanit(`<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${SITEMAP_BOLUM.map((b) => `  <sitemap><loc>${SITE}/sitemap-${b}.xml</loc><lastmod>${today}</lastmod></sitemap>`).join("\n")}\n</sitemapindex>`);
+  let urls = [];
+  if (bolum === "sayfalar") {
+    const rows = (await env.DB.prepare("SELECT section, slug, updated_at FROM pages WHERE status = 'published'").all()).results || [];
+    urls = [["/", today, "1.0"], ["/parsel-sorgu", today, "0.9"], ["/ihaleler", today, "0.9"], ["/haberler", today, "0.8"], ...Object.keys(SECTIONS).map((s) => [`/${s}`, today, "0.8"]), ["/yasal", "2026-10-26", "0.2"],
+      ...URUN_LISTE.map((u) => [`/urun/${u.slug}`, "2026-10-27", "0.7"]),
+      ...REHBER_LISTE.map((r) => [`/rehber/${r.slug}`, today, "0.8"]),
+      ["/araclar", today, "0.8"], ["/hakkimizda", today, "0.3"], ["/iletisim", today, "0.3"], ...Object.keys(ARACLAR).map((k) => [`/araclar/${k}`, today, "0.8"]),
+      ...rows.filter((r) => r.section !== "il" && r.section !== "ilce" && !(r.section === "urun" && URUN[r.slug]) && !(r.section === "rehber" && REHBER[r.slug])).map((r) => [`/${r.section}/${r.slug}`, (r.updated_at || today).slice(0, 10), "0.7"])];
+  } else if (bolum === "haberler") {
+    try { urls = ((await env.DB.prepare("SELECT id, published_at FROM news WHERE alakali = 1 AND ozet IS NOT NULL ORDER BY published_at DESC LIMIT 1000").all()).results || []).map((n) => [`/haberler/${n.id}`, n.published_at.slice(0, 10), "0.5"]); } catch (e) {}
+  } else if (bolum === "ihaleler") {
+    urls = (await ihaleSitemap(env)).filter((u) => u !== "/ihaleler").map((u) => [u, today, u.includes("/ilan/") ? "0.6" : "0.8"]);
+  } else if (bolum === "iller") {
+    const ils = (await env.DB.prepare("SELECT id, slug FROM geo_il").all()).results || [];
+    const ilSlug = Object.fromEntries(ils.map((i) => [i.id, i.slug]));
+    urls = ils.map((i) => [`/il/${i.slug}`, today, "0.7"]);
+    const ilces = (await env.DB.prepare("SELECT il_id, slug FROM geo_ilce WHERE mah_done = 1").all()).results || [];
+    urls.push(...ilces.map((x) => [`/il/${ilSlug[x.il_id]}/${x.slug}`, today, "0.5"]));
+  } else return null;
+  return xmlYanit(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(([p, d, pr]) => `  <url><loc>${SITE}${p}</loc><lastmod>${d}</lastmod><priority>${pr}</priority></url>`).join("\n")}\n</urlset>`);
 }
 
 /* ---------- ana sayfaya eklenenler ---------- */
@@ -503,7 +512,7 @@ const ILETISIM = `<div class="crumb"><a href="/">Ana sayfa</a> › İletişim</d
 /* Kenar önbelleği: aynı sayfa için veritabanı her ziyarette okunmasın (D1 ücretsiz okuma sınırı) */
 function onbellekSuresi(path) {
   if (path === "/") return 600;
-  if (path === "/sitemap.xml") return 21600;
+  if (path === "/sitemap.xml" || /^\/sitemap-[a-z]+\.xml$/.test(path)) return 21600;
   if (path.startsWith("/haberler/")) return 21600;
   if (path.startsWith("/haberler")) return 900;
   if (path.startsWith("/ihaleler/ilan/")) return 21600;
@@ -546,6 +555,7 @@ export default {
       if (path === "/haberler") return newsPage(env, url);
       { const m = path.match(/^\/haberler\/([a-z0-9]{3,12})$/); if (m) { const r = await haberDetay(env, m[1], { esc, ago, trDate, CATS, page, html, SITE }); if (r) return r; } }
       if (path === "/sitemap.xml") return sitemap(env);
+      { const m = path.match(/^\/sitemap-([a-z]+)\.xml$/); if (m) { const r = await sitemap(env, m[1]); if (r) return r; } }
       if (path === "/topla/milliemlak.js") return new Response(`const __name = (f) => f;\nreturn (${milliEmlakTopla.toString()})(KEY);`, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-store", ...ihaleCors(req) } });
       if (path === "/admin/ilce-uretim") {
         const o = req.headers.get("origin") || "", cors = o === "https://biruni.tuik.gov.tr" ? { "access-control-allow-origin": o, "access-control-allow-methods": "POST, OPTIONS", "access-control-allow-headers": "content-type, x-admin-key" } : {};
