@@ -248,8 +248,10 @@ function newsList(rows) {
 async function newsPage(env, url) {
   const cat = url.searchParams.get("kategori") || "";
   const p = Math.max(1, parseInt(url.searchParams.get("sayfa") || "1", 10) || 1);
-  let rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 });
+  let rows = [], dbHata = false;
+  try { rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 }); } catch (e) { dbHata = true; }
   if (url.search === "?onizleme=tk27" && env.AI) { /* geçici önizleme: ilk 5 habere özet yaz, kaydetme */
+    if (dbHata) { for (const f of [FEEDS[0], FEEDS[3], FEEDS[1]]) { try { const r = await fetch(f.url, { headers: { "user-agent": UA } }); rows.push(...parseRss((await r.text()).slice(0, 120000)).slice(0, 4).map((it) => ({ ...it, id: fnv(normTitle(it.title)), category: f.cat, source: it.source === "Kaynak" && f.name ? f.name : it.source, summary: it.desc }))); } catch (e) {} } }
     const z = await Promise.all(rows.slice(0, 5).map((n) => haberYaz(env, n).catch((e) => ({ hata: e.message }))));
     rows = rows.map((n, i) => (z[i] && !z[i].hata && z[i].alakali ? { ...n, ...z[i], id: n.id } : i < 5 ? { ...n, _h: z[i]?.hata || "alakasız" } : n)).filter((n) => !(n._h === "alakasız"));
   }
@@ -259,10 +261,10 @@ async function newsPage(env, url) {
   const zengin = rows.filter((n) => n.ozet), yalin = rows.filter((n) => !n.ozet);
   const one = p === 1 && zengin.length > 3 ? zengin.find((n) => n.onem && ["arazi", "destek", "fiyat"].includes(n.category)) || zengin[0] : null;
   const kartlar = zengin.filter((n) => n !== one);
-  const govde = !rows.length ? newsList([]) : `${one ? haberOne(one, ctx) : ""}${kartlar.length ? `<div class="hb-grid">${kartlar.map((n) => haberKart(n, ctx)).join("")}</div>` : ""}${yalin.length ? `<h2>${zengin.length ? "Diğer başlıklar" : "Son başlıklar"}</h2>${haberBasliklar(yalin, ctx)}` : ""}`;
+  const govde = !rows.length ? (dbHata ? `<p class="note">Haberler şu anda güncelleniyor, lütfen biraz sonra tekrar bakın.</p>` : newsList([])) : `${one ? haberOne(one, ctx) : ""}${kartlar.length ? `<div class="hb-grid">${kartlar.map((n) => haberKart(n, ctx)).join("")}</div>` : ""}${yalin.length ? `<h2>${zengin.length ? "Diğer başlıklar" : "Son başlıklar"}</h2>${haberBasliklar(yalin, ctx)}` : ""}`;
   const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Haberler</div><h1>${cat ? esc(CATS[cat]) + " haberleri" : "Tarım ve arazi haberleri"}</h1>
 <p class="lead">Gündemi sizin için süzüyoruz: her haberin kısa özeti ve çiftçi, üretici ya da arazi sahibi için neden önemli olduğu. Haberin tamamına kaynağından ulaşabilirsiniz.</p>${tabs}${govde}${more}`;
-  return html(page({ title: `${cat ? CATS[cat] + " haberleri" : "Tarım ve arazi haberleri, özetler"} · Topraklık`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600);
+  return html(page({ title: `${cat ? CATS[cat] + " haberleri" : "Tarım ve arazi haberleri, özetler"} · Topraklık`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600, dbHata);
 }
 
 const URUN_KAT = ["Tahıllar", "Baklagiller", "Yağlı tohumlar", "Endüstri bitkileri", "Yem bitkileri", "Sebzeler", "Meyveler", "Sert kabuklular", "Tıbbi ve aromatik bitkiler", "Yeni ve alternatif ürünler"];
