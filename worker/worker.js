@@ -250,7 +250,7 @@ async function newsPage(env, url) {
   const p = Math.max(1, parseInt(url.searchParams.get("sayfa") || "1", 10) || 1);
   let rows = [], dbHata = false;
   try { rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 }); } catch (e) { dbHata = true; }
-  if (url.search === "?onizleme=tk27" && env.AI) { /* geçici önizleme: ilk 5 habere özet yaz, kaydetme */
+  if (/^\?onizleme=tk27(&v=\d+)?$/.test(url.search) && env.AI) { /* geçici önizleme: ilk 5 habere özet yaz, kaydetme */
     if (dbHata) { for (const f of [FEEDS[0], FEEDS[3], FEEDS[1]]) { try { const r = await fetch(f.url, { headers: { "user-agent": UA } }); rows.push(...parseRss((await r.text()).slice(0, 120000)).slice(0, 4).map((it) => ({ ...it, id: fnv(normTitle(it.title)), category: f.cat, source: it.source === "Kaynak" && f.name ? f.name : it.source, summary: it.desc }))); } catch (e) {} } }
     const z = await Promise.all(rows.slice(0, 5).map((n) => haberYaz(env, n).catch((e) => ({ hata: e.message }))));
     rows = rows.map((n, i) => (z[i] && !z[i].hata && z[i].alakali ? { ...n, ...z[i], id: n.id } : i < 5 ? { ...n, _h: z[i]?.hata ? z[i].hata + " | " + (z[i].ham || "") : "alakasız" } : n));

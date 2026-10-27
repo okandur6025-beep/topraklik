@@ -58,7 +58,7 @@ Sana bir haberin başlığı ve kaynak metninden parçalar verilecek. YALNIZCA �
 {"alakali": true veya false, "ozet": "...", "onem": "...", "konu": "...", "urunler": ["..."], "iller": ["..."]}
 - alakali: Haber tarım, hayvancılık, gıda üretimi, tarım ürünü fiyatları, tarımsal destek/hibe, kırsal kalkınma, su/sulama, iklimin tarıma etkisi, arazi/tarla/arsa, tapu, imar veya ihale ile ilgiliyse true. Savunma, siyaset, spor, magazin, genel ekonomi, Mısır ülkesi gibi konular ise false.
 - ozet: 2-3 cümle. Kendi cümlelerinle yaz, kaynak metinden cümle kopyalama. Kim, ne, nerede, ne zaman ve önemli rakamlar.
-- onem: 1-2 cümle. Bu haber çiftçi, üretici veya arazi sahibi/alıcısı için neden önemli, ne yapmalı ya da neye dikkat etmeli. "Okur" veya "okuyucu" deme, doğrudan "çiftçiler", "üreticiler", "arazi alacaklar" gibi yaz.
+- onem: 1-2 cümle. Bu haberin çiftçi, üretici veya arazi sahibi/alıcısı için SOMUT etkisi: fiyata, gelire, maliyete, başvuru tarihine, ödemeye, arazi değerine ya da ekim kararına nasıl yansır; kim etkilenir; neyi takip etmeli veya kontrol etmeli. "Analiz etmeli", "haklarını korumalı", "önlem almalı" gibi genel ve boş tavsiyeler verme. Siyasi görüş, talep veya "devlet şunu yapmalı" türü yorum yazma; tarafsız kal. "Ayrıca" ile başlayan dolgu cümle ekleme. "Okur" deme; "çiftçiler", "üreticiler", "arazi alacaklar" gibi yaz.
 - konu: şunlardan biri: tahil, meyve, sebze, hayvan, destek, fiyat, arazi, su, iklim, teknoloji, genel
 - urunler: metinde geçen tarım ürünleri (ör. "buğday", "fındık"); yoksa [].
 - iller: metinde geçen Türkiye illeri (ör. "Konya"); yoksa [].
