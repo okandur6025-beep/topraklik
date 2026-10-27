@@ -1,0 +1,10 @@
+name: Erişim testi
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s -m 30 -o /dev/null -w "mebis %{http_code}\n" -X POST -H 'Content-Type: application/json' -d '{"offset":0,"pageSize":1}' https://mebis-s-p.csb.gov.tr/api/MileWeb/GetSatisIlanList || echo "mebis HATA"
+          curl -s -m 30 -o /dev/null -w "ilan.gov.tr %{http_code}\n" https://www.ilan.gov.tr/ || echo "ilan HATA"
+          curl -s -m 30 -o /dev/null -w "esatis %{http_code}\n" https://esatis.uyap.gov.tr/ || echo "esatis HATA"
