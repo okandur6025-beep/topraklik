@@ -30,7 +30,8 @@ const SSS = [
 export const ANA_CSS = `
 main.tam{max-width:none;padding:0}
 .as-wrap{max-width:1180px;margin:0 auto;padding:0 16px}
-.as-hero{position:relative;color:#fff;background:#1F3A22 url(/img/hero.jpg) center 62%/cover no-repeat;isolation:isolate}
+.as-hero{position:relative;color:#fff;background:#1F3A22 url(/img/hero-1600.webp) center 62%/cover no-repeat;isolation:isolate}
+@media(max-width:900px){.as-hero{background-image:url(/img/hero-900.webp)}}
 .as-hero::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(100deg,rgba(18,34,20,.92) 0%,rgba(18,34,20,.74) 42%,rgba(18,34,20,.25) 100%),linear-gradient(0deg,rgba(18,34,20,.7),transparent 45%)}
 .as-hero .as-wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:36px;align-items:center;padding-top:clamp(40px,7vw,86px);padding-bottom:clamp(40px,6vw,72px)}
 .as-kicker{font:800 12px/1 Manrope,system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#E9C46A}
@@ -170,9 +171,9 @@ export async function anaSayfa(env, { page, html, esc, latestNews, CATS, ago }) 
 <section class="as-bolum"><div class="as-wrap">
 <div class="as-bas"><div><div class="as-kicker" style="color:var(--gold)">Ne yapabilirsiniz?</div><h2>Araziyle ilgili kararın üç adımı</h2></div></div>
 <div class="as-uclu">
-<a class="as-giris" href="/parsel-sorgu"><img src="/img/t2.jpg" alt="" loading="lazy" width="560" height="350"><div><i>${IK.parsel}</i><b>Parselini tanı</b><p>Ada ve parselle tarlanın gerçek sınırını uyduda ve 3B arazide görün.</p><ul><li>${IK.tik}Yüzölçümü, nitelik, mevkii</li><li>${IK.tik}Rakım ve yaklaşık eğim</li><li>${IK.tik}Paylaşılabilir bağlantı, KML</li></ul><span class="git">Parsel sorgula ${IK.ok}</span></div></a>
-<a class="as-giris" href="/ihaleler"><img src="/img/t4.jpg" alt="" loading="lazy" width="566" height="340"><div><i>${IK.ihale}</i><b>Fırsatı yakala</b><p>İcra, sulh hukuk ve hazine satışlarını il ve ilçeye göre tek yerden izleyin.</p><ul><li>${IK.tik}1. ve 2. artırma tarihleri</li><li>${IK.tik}Hisseli satış uyarısı, KDV, teminat</li><li>${IK.tik}Her ilanda kaynağa bağlantı</li></ul><span class="git">İhalelere bak ${IK.ok}</span></div></a>
-<a class="as-giris" href="/urun"><img src="/img/drip.jpg" alt="" loading="lazy" width="473" height="536" ><div><i>${IK.urun}</i><b>Değerini bil</b><p>Ne ekilir, ne kazandırır? İlçenizin gerçek verimiyle hesaplayın.</p><ul><li>${IK.tik}117 ürün için ekim ve bakım rehberi</li><li>${IK.tik}TÜİK ilçe verimi, borsa fiyatları</li><li>${IK.tik}Dekar başına tahmini kazanç</li></ul><span class="git">Ürünlere bak ${IK.ok}</span></div></a>
+<a class="as-giris" href="/parsel-sorgu"><img src="/img/t2.webp" alt="" loading="lazy" width="540" height="340"><div><i>${IK.parsel}</i><b>Parselini tanı</b><p>Ada ve parselle tarlanın gerçek sınırını uyduda ve 3B arazide görün.</p><ul><li>${IK.tik}Yüzölçümü, nitelik, mevkii</li><li>${IK.tik}Rakım ve yaklaşık eğim</li><li>${IK.tik}Paylaşılabilir bağlantı, KML</li></ul><span class="git">Parsel sorgula ${IK.ok}</span></div></a>
+<a class="as-giris" href="/ihaleler"><img src="/img/t4.webp" alt="" loading="lazy" width="566" height="340"><div><i>${IK.ihale}</i><b>Fırsatı yakala</b><p>İcra, sulh hukuk ve hazine satışlarını il ve ilçeye göre tek yerden izleyin.</p><ul><li>${IK.tik}1. ve 2. artırma tarihleri</li><li>${IK.tik}Hisseli satış uyarısı, KDV, teminat</li><li>${IK.tik}Her ilanda kaynağa bağlantı</li></ul><span class="git">İhalelere bak ${IK.ok}</span></div></a>
+<a class="as-giris" href="/urun"><img src="/img/drip.webp" alt="" loading="lazy" width="473" height="536" ><div><i>${IK.urun}</i><b>Değerini bil</b><p>Ne ekilir, ne kazandırır? İlçenizin gerçek verimiyle hesaplayın.</p><ul><li>${IK.tik}117 ürün için ekim ve bakım rehberi</li><li>${IK.tik}TÜİK ilçe verimi, borsa fiyatları</li><li>${IK.tik}Dekar başına tahmini kazanç</li></ul><span class="git">Ürünlere bak ${IK.ok}</span></div></a>
 </div></div></section>
 
 ${ihaleler.length ? `<section class="as-bolum acik"><div class="as-wrap">
@@ -182,7 +183,7 @@ ${ihaleler.length ? `<section class="as-bolum acik"><div class="as-wrap">
 </div></section>` : ""}
 
 <section class="as-bolum"><div class="as-wrap as-pasaport">
-<figure><img src="/img/featured.jpg" alt="Tarım arazileri, kuş bakışı" loading="lazy" width="900" height="559"><svg viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true"><path d="M150 96 L262 82 L292 170 L176 198 Z" fill="rgba(242,195,90,.28)" stroke="#FFE29A" stroke-width="3"/><path d="M150 96 L262 82 L292 170 L176 198 Z" fill="none" stroke="#F2C35A" stroke-width="10" stroke-opacity=".3"/></svg>
+<figure><img src="/img/featured.webp" alt="Tarım arazileri, kuş bakışı" loading="lazy" width="900" height="559"><svg viewBox="0 0 400 300" preserveAspectRatio="none" aria-hidden="true"><path d="M150 96 L262 82 L292 170 L176 198 Z" fill="rgba(242,195,90,.28)" stroke="#FFE29A" stroke-width="3"/><path d="M150 96 L262 82 L292 170 L176 198 Z" fill="none" stroke="#F2C35A" stroke-width="10" stroke-opacity=".3"/></svg>
 <figcaption><span><b>1.603 m²</b>yüzölçümü</span><span><b>Tarla</b>nitelik</span><span><b>823 m</b>rakım</span></figcaption></figure>
 <div><div class="as-kicker" style="color:var(--gold)">3B parsel sorgu</div><h2 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3.2vw,38px);line-height:1.12;margin:8px 0 0">Tapudaki numaradan tarlanın kendisine</h2>
 <ul class="as-liste"><li>${IK.tik}<span><b>Gerçek sınır:</b> Parsel çizgisi Tapu ve Kadastro'nun servisinden gelir, uydu fotoğrafının üzerine çizilir.</span></li><li>${IK.tik}<span><b>Arazi yapısı:</b> 3B görünümde tepe ve vadiler, ortalama rakım ve yaklaşık eğim.</span></li><li>${IK.tik}<span><b>Çevresi:</b> Aynı ilçedeki ihaleler, ilçede ne ekildiği, güncel ve geçmiş uydu görüntülerine bağlantı.</span></li><li>${IK.tik}<span><b>Paylaşım:</b> Bağlantıyı WhatsApp'tan gönderin ya da KML olarak Google Earth'te açın.</span></li></ul>

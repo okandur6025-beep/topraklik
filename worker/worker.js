@@ -247,8 +247,24 @@ function kisaBaslik(t) {
   if (t.length > 68) { t = t.slice(0, 66); t = t.slice(0, t.lastIndexOf(" ")).replace(/[,:;·(\-–]+$/, "").trim(); }
   return t;
 }
+/* gezinme yolu (.crumb) işaretlemesinden BreadcrumbList üretir; sayfa kendi verisini vermişse eklemez */
+function kirintiLd(body, path) {
+  const m = body.match(/<div class="crumb">([\s\S]*?)<\/div>/);
+  if (!m) return null;
+  const temiz = (t) => t.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+  const ogeler = [];
+  for (const parca of m[1].split("›")) {
+    const a = parca.match(/href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    const ad = temiz(a ? a[2] : parca);
+    if (ad) ogeler.push([ad, a ? a[1].replace(/&amp;/g, "&") : path]);
+  }
+  if (ogeler.length < 2) return null;
+  return { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: ogeler.map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: SITE + u })) };
+}
+
 function page({ title, description, path, body, current, jsonld, noindex, tam, ekCss }) {
   const url = SITE + path;
+  if (!JSON.stringify(jsonld || "").includes("BreadcrumbList")) { const k = kirintiLd(body, path); if (k) jsonld = jsonld ? [...(Array.isArray(jsonld) ? jsonld : [jsonld]), k] : k; }
   const ogTitle = title;
   title = kisaBaslik(title);
   return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -256,7 +272,7 @@ function page({ title, description, path, body, current, jsonld, noindex, tam, e
 <meta property="og:type" content="website"><meta property="og:site_name" content="Topraklık"><meta property="og:locale" content="tr_TR">
 <meta property="og:title" content="${esc(ogTitle)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${url}"><meta property="og:image" content="${SITE}/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="theme-color" content="#2E5130">${MOBIL_META}
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>${path === "/" ? '<link rel="preload" as="image" href="/img/hero-900.webp" media="(max-width:900px)"><link rel="preload" as="image" href="/img/hero-1600.webp" media="(min-width:901px)">' : ""}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Manrope:wght@400;600;700;800&display=swap">
 <style>${CSS}${URUN_CSS}${IHALE_CSS}${HABER_CSS}${MOBIL_CSS}${path === "/parsel-sorgu" ? PARSEL_CSS : ""}${ekCss || ""}</style>${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, "\\u003c")}</script>` : ""}</head><body>
 <header class="top"><div class="wrap">${GERI_BTN}<a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="35">Topraklık</a>
 <nav aria-label="Ana menü">${NAV.map(([h, t]) => `<a href="${h}"${current === h ? ' aria-current="page"' : ""}>${t}</a>`).join("")}</nav></div></header>
@@ -292,17 +308,12 @@ async function newsPage(env, url) {
   const p = Math.max(1, parseInt(url.searchParams.get("sayfa") || "1", 10) || 1);
   let rows = [], dbHata = false;
   try { rows = await latestNews(env, { cat: CATS[cat] ? cat : "", limit: 40, offset: (p - 1) * 40 }); } catch (e) { dbHata = true; }
-  if (/^\?onizleme=tk27(&v=\d+)?$/.test(url.search) && env.AI) { /* geçici önizleme: ilk 5 habere özet yaz, kaydetme */
-    if (dbHata) { for (const f of [FEEDS[3], FEEDS[1], FEEDS[0], FEEDS[2]]) { try { const r = await fetch(f.url, { headers: { "user-agent": UA } }); rows.push(...parseRss((await r.text()).slice(0, 120000)).slice(0, 4).map((it) => ({ ...it, id: fnv(normTitle(it.title)), category: f.cat, source: it.source === "Kaynak" && f.name ? f.name : it.source, summary: it.desc }))); } catch (e) {} } }
-    const z = await Promise.all(rows.slice(0, 8).map((n) => haberYaz(env, n).catch((e) => ({ hata: e.message }))));
-    rows = rows.map((n, i) => (z[i] && !z[i].hata && z[i].alakali ? { ...n, ...z[i], id: n.id } : i < 8 ? { ...n, _h: z[i]?.hata ? z[i].hata + " | " + (z[i].ham || "") : "alakasız" } : n));
-  }
   const tabs = `<nav class="tabs" aria-label="Kategoriler"><a href="/haberler"${!cat ? ' aria-current="page"' : ""}>Tümü</a>${Object.entries(CATS).map(([k, v]) => `<a href="/haberler?kategori=${k}"${cat === k ? ' aria-current="page"' : ""}>${v}</a>`).join("")}</nav>`;
   const more = rows.length === 40 ? `<p><a href="/haberler?${cat ? `kategori=${cat}&` : ""}sayfa=${p + 1}">Daha eski haberler →</a></p>` : "";
   rows = tekrarAyikla(rows);
   const ctx = { esc, ago, CATS, cat };
   const govde = !rows.length ? (dbHata ? `<p class="note">Haberler şu anda güncelleniyor, lütfen biraz sonra tekrar bakın.</p>` : newsList([])) : bulten(rows, ctx);
-  const body = `${rows.filter((n) => n._h || n.model).map((n) => `<!-- hata: ${esc(String(n._h || "model " + n.model))} -->`).join("")}<div class="crumb"><a href="/">Ana sayfa</a> › Haber Bülteni</div>${bultenUst({ esc, CATS, cat, tabs })}${govde}${more}`;
+  const body = `<div class="crumb"><a href="/">Ana sayfa</a> › Haber Bülteni</div>${bultenUst({ esc, CATS, cat, tabs })}${govde}${more}`;
   return html(page({ title: `${cat ? CATS[cat] + " · " : ""}Topraklık Haber Bülteni: tarım, hibe, fiyat ve arazi haberleri`, description: "Güncel tarım, hibe ve destek, ürün fiyatları ve arazi ihale haberleri; her haberin kısa özeti ve neden önemli olduğu.", path: "/haberler" + (cat ? `?kategori=${cat}` : ""), body, current: "/haberler" }), 200, 600, dbHata);
 }
 
