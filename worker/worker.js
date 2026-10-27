@@ -466,6 +466,7 @@ export default {
         if (!env.ADMIN_KEY || req.headers.get("x-admin-key") !== env.ADMIN_KEY) return new Response("yetkisiz", { status: 401 });
         if (url.pathname === "/admin/probe") { const r = await fetch(url.searchParams.get("u"), { headers: { "user-agent": UA } }); const t = await r.text(); return Response.json({ status: r.status, len: t.length, items: (t.match(/<item[ >]/g) || []).length, head: t.slice(0, 300), props: (t.match(/"properties":\{[^}]*\}/g) || []).slice(0, 4), tail: t.slice(-300) }); }
         if (url.pathname === "/admin/geo") return Response.json(await geoStep(env));
+        if (url.pathname === "/admin/runs") return Response.json((await env.DB.prepare("SELECT * FROM runs ORDER BY id DESC LIMIT 30").all()).results);
         if (url.pathname === "/admin/uyap") return Response.json(await uyapAdim(env, { IL_AD, slugify, butce: parseInt(url.searchParams.get("n") || "18", 10) }));
         if (url.pathname === "/admin/bik") return Response.json(await bikAdim(env, { IL_AD, slugify, zorla: url.searchParams.get("zorla") === "1", sayfaSayisi: parseInt(url.searchParams.get("n") || "12", 10) }));
         if (url.pathname === "/admin/fiyat") return Response.json(await fiyatAdim(env, parseInt(url.searchParams.get("parca") || "0", 10)));
